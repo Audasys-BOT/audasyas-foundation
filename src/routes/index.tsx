@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2 } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getDailyGuidance } from "@/lib/guidance.functions";
 
 export const Route = createFileRoute("/")({
   component: SimDashboard,
@@ -68,6 +72,17 @@ function SimDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        <Tabs defaultValue="financeiro" className="space-y-8">
+          <TabsList className="grid w-full sm:w-auto grid-cols-2">
+            <TabsTrigger value="financeiro" className="gap-2">
+              <Wallet className="h-4 w-4" /> Controle Financeiro
+            </TabsTrigger>
+            <TabsTrigger value="leme" className="gap-2">
+              <Compass className="h-4 w-4" /> Leme da Vida
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="financeiro" className="space-y-8 mt-0">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard icon={<Wallet className="h-4 w-4" />} label="Salário Mensal" value={formatBRL(parseNumber(salario))} />
           <KpiCard icon={<ArrowDownRight className="h-4 w-4" />} label="Custo de Vida Fixo" value={formatBRL(parseNumber(custo))} />
@@ -156,6 +171,12 @@ function SimDashboard() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="leme" className="mt-0">
+            <LemeDaVida />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
