@@ -835,6 +835,7 @@ function Estrategista({
   reservaTeto,
   metaReservaAtingida,
   liveCapacity,
+  userId,
 }: {
   aporteSugerido: number;
   sugestaoReserva: number;
@@ -842,6 +843,7 @@ function Estrategista({
   reservaTeto: number;
   metaReservaAtingida: boolean;
   liveCapacity: number;
+  userId: string;
 }) {
   const [valor, setValor] = useState("");
   const [assets, setAssets] = useState<Asset[]>([]);
