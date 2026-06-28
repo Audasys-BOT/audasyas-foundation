@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ativos: {
+        Row: {
+          created_at: string
+          id: string
+          pct: number
+          ticker: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pct?: number
+          ticker: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pct?: number
+          ticker?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       financial_metrics: {
         Row: {
           capacidade_aporte_mensal: number | null
