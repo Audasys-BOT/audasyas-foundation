@@ -597,11 +597,13 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
 function AssetRow({
   asset,
   aporteMensal,
+  metaReservaAtingida,
   onRemove,
   onPct,
 }: {
   asset: Asset;
   aporteMensal: number;
+  metaReservaAtingida: boolean;
   onRemove: () => void;
   onPct: (p: number) => void;
 }) {
@@ -615,8 +617,12 @@ function AssetRow({
   const analyzeFn = useServerFn(analyzeAsset);
   const [analysis, setAnalysis] = useState<AssetAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [valorAporte, setValorAporte] = useState("");
 
-  const valorMensal = (aporteMensal * asset.pct) / 100;
+  const change = quote.data?.change ?? null;
+  const isOpportunity = change !== null && change <= -3;
+  const valorBase = (aporteMensal * asset.pct) / 100;
+  const valorSugerido = isOpportunity ? valorBase * 1.03 : valorBase;
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -625,12 +631,21 @@ function AssetRow({
         data: {
           ticker: asset.ticker,
           preco_atual: quote.data?.price ?? null,
-          variacao_dia: quote.data?.change ?? null,
+          variacao_dia: change,
           percentual_carteira: asset.pct,
           aporte_mensal: aporteMensal,
         },
       });
       setAnalysis(res);
+      // Assistente de Execução: preenche o valor proporcional 3/5/10% + boost de oportunidade.
+      if (metaReservaAtingida && valorSugerido > 0) {
+        setValorAporte(valorSugerido.toFixed(2).replace(".", ","));
+        toast.success(
+          `Aporte sugerido para ${asset.ticker}: ${formatBRL(valorSugerido)}${isOpportunity ? " (com +3% de oportunidade)" : ""}`,
+        );
+      } else if (!metaReservaAtingida) {
+        toast.info("Reserva ainda não atingiu o teto — execução automática desabilitada.");
+      }
     } catch (e) {
       toast.error("Falha ao analisar: " + (e as Error).message);
     } finally {
@@ -667,12 +682,10 @@ function AssetRow({
           <p className="text-xs text-muted-foreground">Dia</p>
           <p
             className={`text-sm font-semibold tabular-nums ${
-              (quote.data?.change ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
+              (change ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
             }`}
           >
-            {quote.data?.change !== null && quote.data?.change !== undefined
-              ? `${quote.data.change.toFixed(2)}%`
-              : "—"}
+            {change !== null ? `${change.toFixed(2)}%` : "—"}
           </p>
         </div>
         <div className="space-y-1">
@@ -704,9 +717,28 @@ function AssetRow({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Aporte mensal destinado: <span className="text-primary font-semibold">{formatBRL(valorMensal)}</span>
-      </p>
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto] items-end pt-1">
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wider">
+            Valor do Aporte (R$){" "}
+            {isOpportunity && (
+              <span className="ml-1 inline-flex items-center gap-1 text-emerald-300 normal-case">
+                <Zap className="h-3 w-3" /> oportunidade +3%
+              </span>
+            )}
+          </Label>
+          <Input
+            inputMode="decimal"
+            value={valorAporte}
+            onChange={(e) => setValorAporte(e.target.value)}
+            placeholder={metaReservaAtingida ? formatBRL(valorSugerido) : "Reserva pendente"}
+            disabled={!metaReservaAtingida}
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground sm:text-right">
+          Sugestão: <span className="text-primary font-semibold">{formatBRL(valorSugerido)}</span>
+        </p>
+      </div>
 
       {analysis && (
         <div className="space-y-2 pt-2 border-t border-border">
