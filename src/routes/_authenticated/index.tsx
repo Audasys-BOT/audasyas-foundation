@@ -7,23 +7,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
 import { analyzeAsset, type AssetAnalysis } from "@/lib/assets.functions";
 import { fetchQuote, type Quote } from "@/features/assets/brapi";
+import { supabase } from "@/integrations/supabase/client";
+import { useRouter } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: SimDashboard,
 });
 
 type Tx = { id: string; amount: number; description?: string; date: string };
 
 type Asset = { id: string; ticker: string; pct: number };
-const ASSETS_KEY = "audasyas:assets";
+const ASSETS_KEY_BASE = "audasyas:assets";
 
 function SimDashboard() {
+  const router = useRouter();
+  const { user } = Route.useRouteContext();
+  const userId = user.id;
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.navigate({ to: "/auth", replace: true });
+  };
   const [salario, setSalario] = useState("");
   const [custo, setCusto] = useState("");
   const [reserva, setReserva] = useState("");
@@ -80,11 +89,11 @@ function SimDashboard() {
             <h1 className="text-xl font-bold tracking-tight">
               <span className="text-primary">AudasYAs</span> Invest
             </h1>
-            <p className="text-xs text-muted-foreground">Modo simulação (sem login)</p>
+            <p className="text-xs text-muted-foreground">{user.email ?? "Sessão ativa"}</p>
           </div>
-          <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded border border-primary/40 text-primary">
-            Sandbox
-          </span>
+          <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
+            <LogOut className="h-4 w-4" /> Sair
+          </Button>
         </div>
       </header>
 
@@ -198,15 +207,16 @@ function SimDashboard() {
           </TabsContent>
 
           <TabsContent value="leme" className="mt-0">
-            <LemeDaVida />
+            <LemeDaVida userId={userId} />
           </TabsContent>
 
           <TabsContent value="ativos" className="mt-0">
-            <Ativos aporteMensal={aporteSugerido} metaReservaAtingida={metaReservaAtingida} />
+            <Ativos userId={userId} aporteMensal={aporteSugerido} metaReservaAtingida={metaReservaAtingida} />
           </TabsContent>
 
           <TabsContent value="estrategista" className="mt-0">
             <Estrategista
+              userId={userId}
               aporteSugerido={aporteSugerido}
               sugestaoReserva={sugestaoReserva}
               reservaFaltante={reservaFaltante}
@@ -255,7 +265,7 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
 // LEME DA VIDA — long-term life compass
 // ============================================================
 
-const BIRTH_KEY = "audasyas:birthdate";
+const BIRTH_KEY_BASE = "audasyas:birthdate";
 
 type Milestone = {
   age: number;
@@ -293,17 +303,17 @@ const MILESTONES: Milestone[] = [
   },
 ];
 
-function LemeDaVida() {
+function LemeDaVida({ userId }: { userId: string }) {
   const [birth, setBirth] = useState<string>("");
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(BIRTH_KEY) : null;
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(`${BIRTH_KEY_BASE}:${userId}`) : null;
     if (stored) setBirth(stored);
   }, []);
 
   const persistBirth = (v: string) => {
     setBirth(v);
-    if (typeof window !== "undefined") window.localStorage.setItem(BIRTH_KEY, v);
+    if (typeof window !== "undefined") window.localStorage.setItem(`${BIRTH_KEY_BASE}:${userId}`, v);
   };
 
   return (
@@ -473,14 +483,14 @@ function GuidanceCard() {
 // ATIVOS — watchlist, IA analista e projeção de legado
 // ============================================================
 
-function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; metaReservaAtingida: boolean }) {
+function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string; aporteMensal: number; metaReservaAtingida: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ticker, setTicker] = useState("");
   const [pct, setPct] = useState<number>(5);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(ASSETS_KEY);
+    const raw = window.localStorage.getItem(`${ASSETS_KEY_BASE}:${userId}`);
     if (raw) {
       try {
         setAssets(JSON.parse(raw));
@@ -492,7 +502,7 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
 
   const persist = (next: Asset[]) => {
     setAssets(next);
-    if (typeof window !== "undefined") window.localStorage.setItem(ASSETS_KEY, JSON.stringify(next));
+    if (typeof window !== "undefined") window.localStorage.setItem(`${ASSETS_KEY_BASE}:${userId}`, JSON.stringify(next));
   };
 
   const addAsset = (e: React.FormEvent) => {
@@ -835,6 +845,7 @@ function Estrategista({
   reservaTeto,
   metaReservaAtingida,
   liveCapacity,
+  userId,
 }: {
   aporteSugerido: number;
   sugestaoReserva: number;
@@ -842,13 +853,14 @@ function Estrategista({
   reservaTeto: number;
   metaReservaAtingida: boolean;
   liveCapacity: number;
+  userId: string;
 }) {
   const [valor, setValor] = useState("");
   const [assets, setAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(ASSETS_KEY);
+    const raw = window.localStorage.getItem(`${ASSETS_KEY_BASE}:${userId}`);
     if (raw) {
       try { setAssets(JSON.parse(raw)); } catch { /* ignore */ }
     }
