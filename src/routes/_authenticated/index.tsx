@@ -293,17 +293,17 @@ const MILESTONES: Milestone[] = [
   },
 ];
 
-function LemeDaVida() {
+function LemeDaVida({ userId }: { userId: string }) {
   const [birth, setBirth] = useState<string>("");
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? window.localStorage.getItem(BIRTH_KEY) : null;
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem(`${BIRTH_KEY_BASE}:${userId}`) : null;
     if (stored) setBirth(stored);
   }, []);
 
   const persistBirth = (v: string) => {
     setBirth(v);
-    if (typeof window !== "undefined") window.localStorage.setItem(BIRTH_KEY, v);
+    if (typeof window !== "undefined") window.localStorage.setItem(`${BIRTH_KEY_BASE}:${userId}`, v);
   };
 
   return (
@@ -473,14 +473,14 @@ function GuidanceCard() {
 // ATIVOS — watchlist, IA analista e projeção de legado
 // ============================================================
 
-function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; metaReservaAtingida: boolean }) {
+function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string; aporteMensal: number; metaReservaAtingida: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ticker, setTicker] = useState("");
   const [pct, setPct] = useState<number>(5);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(ASSETS_KEY);
+    const raw = window.localStorage.getItem(`${ASSETS_KEY_BASE}:${userId}`);
     if (raw) {
       try {
         setAssets(JSON.parse(raw));
@@ -492,7 +492,7 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
 
   const persist = (next: Asset[]) => {
     setAssets(next);
-    if (typeof window !== "undefined") window.localStorage.setItem(ASSETS_KEY, JSON.stringify(next));
+    if (typeof window !== "undefined") window.localStorage.setItem(`${ASSETS_KEY_BASE}:${userId}`, JSON.stringify(next));
   };
 
   const addAsset = (e: React.FormEvent) => {
@@ -848,7 +848,7 @@ function Estrategista({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(ASSETS_KEY);
+    const raw = window.localStorage.getItem(`${ASSETS_KEY_BASE}:${userId}`);
     if (raw) {
       try { setAssets(JSON.parse(raw)); } catch { /* ignore */ }
     }
