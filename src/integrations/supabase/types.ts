@@ -14,7 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      financial_metrics: {
+        Row: {
+          capacidade_aporte_mensal: number | null
+          created_at: string
+          custo_de_vida_fixo: number
+          id: string
+          reserva_emergencia: number
+          salario_mensal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          capacidade_aporte_mensal?: number | null
+          created_at?: string
+          custo_de_vida_fixo?: number
+          id?: string
+          reserva_emergencia?: number
+          salario_mensal?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          capacidade_aporte_mensal?: number | null
+          created_at?: string
+          custo_de_vida_fixo?: number
+          id?: string
+          reserva_emergencia?: number
+          salario_mensal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          long_term_goal: string | null
+          target_amount: number | null
+          target_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          long_term_goal?: string | null
+          target_amount?: number | null
+          target_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          long_term_goal?: string | null
+          target_amount?: number | null
+          target_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          transaction_date: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_date?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          transaction_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
