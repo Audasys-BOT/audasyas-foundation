@@ -13,6 +13,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
 import { analyzeAsset, type AssetAnalysis } from "@/lib/assets.functions";
 import { fetchQuote, type Quote } from "@/features/assets/brapi";
+import { supabase } from "@/integrations/supabase/client";
+import { useRouter } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: SimDashboard,
@@ -24,6 +26,13 @@ type Asset = { id: string; ticker: string; pct: number };
 const ASSETS_KEY_BASE = "audasyas:assets";
 
 function SimDashboard() {
+  const router = useRouter();
+  const { user } = Route.useRouteContext();
+  const userId = user.id;
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.navigate({ to: "/auth", replace: true });
+  };
   const [salario, setSalario] = useState("");
   const [custo, setCusto] = useState("");
   const [reserva, setReserva] = useState("");
@@ -80,11 +89,11 @@ function SimDashboard() {
             <h1 className="text-xl font-bold tracking-tight">
               <span className="text-primary">AudasYAs</span> Invest
             </h1>
-            <p className="text-xs text-muted-foreground">Modo simulação (sem login)</p>
+            <p className="text-xs text-muted-foreground">{user.email ?? "Sessão ativa"}</p>
           </div>
-          <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded border border-primary/40 text-primary">
-            Sandbox
-          </span>
+          <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
+            <LogOut className="h-4 w-4" /> Sair
+          </Button>
         </div>
       </header>
 
@@ -207,6 +216,7 @@ function SimDashboard() {
 
           <TabsContent value="estrategista" className="mt-0">
             <Estrategista
+              userId={userId}
               aporteSugerido={aporteSugerido}
               sugestaoReserva={sugestaoReserva}
               reservaFaltante={reservaFaltante}
