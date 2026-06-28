@@ -27,6 +27,7 @@ function SimDashboard() {
   const [salario, setSalario] = useState("");
   const [custo, setCusto] = useState("");
   const [reserva, setReserva] = useState("");
+  const [tetoReserva, setTetoReserva] = useState("");
 
   const liveCapacity = useMemo(
     () => parseNumber(salario) - parseNumber(custo),
@@ -39,12 +40,16 @@ function SimDashboard() {
 
   const totalAportes = txs.reduce((s, t) => s + t.amount, 0);
 
-  const suggestedAporte = useMemo(() => {
-    if (txs.length === 0) return Math.max(0, liveCapacity);
-    const last = txs.slice(0, 3);
-    const avg = last.reduce((s, t) => s + t.amount, 0) / last.length;
-    return Math.max(avg, liveCapacity * 0.8);
-  }, [txs, liveCapacity]);
+  // Nova lógica: priorização Reserva → Ativos.
+  // Sugestão de reserva = quanto falta para o teto, limitado pela capacidade.
+  // Aporte sugerido (para ativos) = Capacidade − Sugestão de reserva.
+  const reservaAtual = parseNumber(reserva);
+  const reservaTeto = parseNumber(tetoReserva);
+  const reservaFaltante = Math.max(0, reservaTeto - reservaAtual);
+  const cap = Math.max(0, liveCapacity);
+  const sugestaoReserva = Math.min(reservaFaltante, cap);
+  const aporteSugerido = Math.max(0, cap - sugestaoReserva);
+  const metaReservaAtingida = reservaTeto > 0 && reservaFaltante <= 0;
 
   const addTx = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,10 +122,11 @@ function SimDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Salário Mensal (R$)" value={salario} onChange={setSalario} />
                 <Field label="Custo de Vida Fixo (R$)" value={custo} onChange={setCusto} />
-                <Field label="Reserva de Emergência (R$)" value={reserva} onChange={setReserva} />
+                <Field label="Reserva atual (R$)" value={reserva} onChange={setReserva} />
+                <Field label="Teto da Reserva (R$)" value={tetoReserva} onChange={setTetoReserva} />
               </div>
             </CardContent>
           </Card>
@@ -196,14 +202,17 @@ function SimDashboard() {
           </TabsContent>
 
           <TabsContent value="ativos" className="mt-0">
-            <Ativos aporteMensal={suggestedAporte} />
+            <Ativos aporteMensal={aporteSugerido} metaReservaAtingida={metaReservaAtingida} />
           </TabsContent>
 
           <TabsContent value="estrategista" className="mt-0">
             <Estrategista
-              suggestedAporte={suggestedAporte}
+              aporteSugerido={aporteSugerido}
+              sugestaoReserva={sugestaoReserva}
+              reservaFaltante={reservaFaltante}
+              reservaTeto={reservaTeto}
+              metaReservaAtingida={metaReservaAtingida}
               liveCapacity={liveCapacity}
-              historicoCount={txs.length}
             />
           </TabsContent>
         </Tabs>
@@ -464,7 +473,7 @@ function GuidanceCard() {
 // ATIVOS — watchlist, IA analista e projeção de legado
 // ============================================================
 
-function Ativos({ aporteMensal }: { aporteMensal: number }) {
+function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; metaReservaAtingida: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ticker, setTicker] = useState("");
   const [pct, setPct] = useState<number>(5);
@@ -506,6 +515,20 @@ function Ativos({ aporteMensal }: { aporteMensal: number }) {
 
   return (
     <div className="space-y-8">
+      {!metaReservaAtingida && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="pt-5 flex items-start gap-3">
+            <PiggyBank className="h-5 w-5 text-amber-300 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-amber-200">Reserva de Emergência ainda não atingida</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                A alocação automática nos ativos só é sugerida após o teto da reserva ser alcançado.
+                Até lá, a Capacidade é direcionada para a reserva (segurança primeiro — Provérbios 21:20).
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -552,6 +575,7 @@ function Ativos({ aporteMensal }: { aporteMensal: number }) {
                   key={a.id}
                   asset={a}
                   aporteMensal={aporteMensal}
+                  metaReservaAtingida={metaReservaAtingida}
                   onRemove={() => removeAsset(a.id)}
                   onPct={(p) => updatePct(a.id, p)}
                 />
@@ -573,11 +597,13 @@ function Ativos({ aporteMensal }: { aporteMensal: number }) {
 function AssetRow({
   asset,
   aporteMensal,
+  metaReservaAtingida,
   onRemove,
   onPct,
 }: {
   asset: Asset;
   aporteMensal: number;
+  metaReservaAtingida: boolean;
   onRemove: () => void;
   onPct: (p: number) => void;
 }) {
@@ -591,8 +617,12 @@ function AssetRow({
   const analyzeFn = useServerFn(analyzeAsset);
   const [analysis, setAnalysis] = useState<AssetAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [valorAporte, setValorAporte] = useState("");
 
-  const valorMensal = (aporteMensal * asset.pct) / 100;
+  const change = quote.data?.change ?? null;
+  const isOpportunity = change !== null && change <= -3;
+  const valorBase = (aporteMensal * asset.pct) / 100;
+  const valorSugerido = isOpportunity ? valorBase * 1.03 : valorBase;
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -601,12 +631,21 @@ function AssetRow({
         data: {
           ticker: asset.ticker,
           preco_atual: quote.data?.price ?? null,
-          variacao_dia: quote.data?.change ?? null,
+          variacao_dia: change,
           percentual_carteira: asset.pct,
           aporte_mensal: aporteMensal,
         },
       });
       setAnalysis(res);
+      // Assistente de Execução: preenche o valor proporcional 3/5/10% + boost de oportunidade.
+      if (metaReservaAtingida && valorSugerido > 0) {
+        setValorAporte(valorSugerido.toFixed(2).replace(".", ","));
+        toast.success(
+          `Aporte sugerido para ${asset.ticker}: ${formatBRL(valorSugerido)}${isOpportunity ? " (com +3% de oportunidade)" : ""}`,
+        );
+      } else if (!metaReservaAtingida) {
+        toast.info("Reserva ainda não atingiu o teto — execução automática desabilitada.");
+      }
     } catch (e) {
       toast.error("Falha ao analisar: " + (e as Error).message);
     } finally {
@@ -643,12 +682,10 @@ function AssetRow({
           <p className="text-xs text-muted-foreground">Dia</p>
           <p
             className={`text-sm font-semibold tabular-nums ${
-              (quote.data?.change ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
+              (change ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
             }`}
           >
-            {quote.data?.change !== null && quote.data?.change !== undefined
-              ? `${quote.data.change.toFixed(2)}%`
-              : "—"}
+            {change !== null ? `${change.toFixed(2)}%` : "—"}
           </p>
         </div>
         <div className="space-y-1">
@@ -680,9 +717,28 @@ function AssetRow({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Aporte mensal destinado: <span className="text-primary font-semibold">{formatBRL(valorMensal)}</span>
-      </p>
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto] items-end pt-1">
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wider">
+            Valor do Aporte (R$){" "}
+            {isOpportunity && (
+              <span className="ml-1 inline-flex items-center gap-1 text-emerald-300 normal-case">
+                <Zap className="h-3 w-3" /> oportunidade +3%
+              </span>
+            )}
+          </Label>
+          <Input
+            inputMode="decimal"
+            value={valorAporte}
+            onChange={(e) => setValorAporte(e.target.value)}
+            placeholder={metaReservaAtingida ? formatBRL(valorSugerido) : "Reserva pendente"}
+            disabled={!metaReservaAtingida}
+          />
+        </div>
+        <p className="text-[11px] text-muted-foreground sm:text-right">
+          Sugestão: <span className="text-primary font-semibold">{formatBRL(valorSugerido)}</span>
+        </p>
+      </div>
 
       {analysis && (
         <div className="space-y-2 pt-2 border-t border-border">
@@ -773,16 +829,21 @@ function LegadoProjection({ aporteMensal }: { aporteMensal: number }) {
 // ============================================================
 
 function Estrategista({
-  suggestedAporte,
+  aporteSugerido,
+  sugestaoReserva,
+  reservaFaltante,
+  reservaTeto,
+  metaReservaAtingida,
   liveCapacity,
-  historicoCount,
 }: {
-  suggestedAporte: number;
+  aporteSugerido: number;
+  sugestaoReserva: number;
+  reservaFaltante: number;
+  reservaTeto: number;
+  metaReservaAtingida: boolean;
   liveCapacity: number;
-  historicoCount: number;
 }) {
   const [valor, setValor] = useState("");
-  const [reservaPct, setReservaPct] = useState(30);
   const [assets, setAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
@@ -793,18 +854,18 @@ function Estrategista({
     }
   }, []);
 
-  // Pré-preenche com o aporte sugerido se vazio
+  // Pré-preenche com o aporte sugerido (Capacidade − Sugestão de Reserva)
   useEffect(() => {
-    if (!valor && suggestedAporte > 0) {
-      setValor(suggestedAporte.toFixed(2).replace(".", ","));
+    if (!valor && aporteSugerido > 0) {
+      setValor(aporteSugerido.toFixed(2).replace(".", ","));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestedAporte]);
+  }, [aporteSugerido]);
 
   const v = parseNumber(valor);
-  const valorReserva = (v * reservaPct) / 100;
-  const valorAtivos = v - valorReserva;
-
+  // Priorização: a reserva consome o aporte primeiro, até o teto. O resto vai para ativos.
+  const valorReserva = metaReservaAtingida ? 0 : Math.min(reservaFaltante, v);
+  const valorAtivos = metaReservaAtingida ? v : Math.max(0, v - valorReserva);
   const totalPctAssets = assets.reduce((s, a) => s + a.pct, 0);
 
   return (
@@ -815,33 +876,36 @@ function Estrategista({
             <Target className="h-5 w-5 text-primary" /> Estrategista de Aporte
           </CardTitle>
           <CardDescription>
-            Defina o aporte antes da análise. A capacidade calculada (Salário − Custo) é apenas um piso;
-            o sistema sugere um valor com base no seu histórico recente.
+            Aporte Sugerido = Capacidade de Aporte − Sugestão de Reserva. A Reserva de Emergência é prioridade
+            até atingir o teto. Só então a alocação automática nos ativos é habilitada.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border border-border bg-background/40 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacidade calculada</p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacidade</p>
               <p className="text-lg font-semibold tabular-nums mt-1">{formatBRL(liveCapacity)}</p>
             </div>
-            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-primary/80">Sugestão AudasYAs</p>
-              <p className="text-lg font-semibold text-primary tabular-nums mt-1">{formatBRL(suggestedAporte)}</p>
+            <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-sky-300/80">Sugestão Reserva</p>
+              <p className="text-lg font-semibold text-sky-300 tabular-nums mt-1">{formatBRL(sugestaoReserva)}</p>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {historicoCount > 0 ? `Baseado nos últimos ${Math.min(3, historicoCount)} aportes` : "Sem histórico ainda — usa capacidade"}
+                {reservaTeto <= 0
+                  ? "Defina o teto da reserva"
+                  : metaReservaAtingida
+                  ? "Meta atingida ✓"
+                  : `Faltam ${formatBRL(reservaFaltante)}`}
               </p>
+            </div>
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-primary/80">Aporte Sugerido</p>
+              <p className="text-lg font-semibold text-primary tabular-nums mt-1">{formatBRL(aporteSugerido)}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Capacidade − Reserva</p>
             </div>
             <div className="space-y-1.5">
               <Label>Aporte deste mês (R$)</Label>
               <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0,00" />
             </div>
-          </div>
-
-          <div className="grid gap-2 sm:max-w-sm">
-            <Label className="text-xs">Reserva de Emergência / CDB (%)</Label>
-            <Input type="number" min={0} max={100} step={5} value={reservaPct}
-              onChange={(e) => setReservaPct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))} />
           </div>
         </CardContent>
       </Card>
@@ -850,22 +914,29 @@ function Estrategista({
         <CardHeader>
           <CardTitle className="text-base">Divisão sugerida</CardTitle>
           <CardDescription>
-            Reserva primeiro (segurança), depois ativos da Watchlist conforme os percentuais definidos.
+            Reserva primeiro (até o teto). Após a meta atingida, distribui nos ativos da Watchlist
+            conforme os percentuais 3/5/10.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+          <div className={`flex items-center justify-between rounded-lg border p-3 ${metaReservaAtingida ? "border-border bg-background/40 opacity-70" : "border-sky-500/30 bg-sky-500/5"}`}>
             <div className="flex items-center gap-2">
               <PiggyBank className="h-4 w-4 text-sky-300" />
               <div>
                 <p className="text-sm font-medium">Reserva de Emergência / CDB</p>
-                <p className="text-[11px] text-muted-foreground">{reservaPct}% do aporte</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {metaReservaAtingida ? "Meta atingida — alocação liberada para ativos" : `Prioridade até atingir ${formatBRL(reservaTeto)}`}
+                </p>
               </div>
             </div>
             <p className="text-lg font-semibold text-sky-300 tabular-nums">{formatBRL(valorReserva)}</p>
           </div>
 
-          {assets.length === 0 ? (
+          {!metaReservaAtingida ? (
+            <p className="text-sm text-muted-foreground italic">
+              Alocação nos ativos será habilitada quando a meta de reserva for atingida.
+            </p>
+          ) : assets.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Adicione ativos na aba <span className="text-foreground">Ativos</span> para ver a distribuição.
             </p>
