@@ -473,7 +473,7 @@ function GuidanceCard() {
 // ATIVOS — watchlist, IA analista e projeção de legado
 // ============================================================
 
-function Ativos({ aporteMensal }: { aporteMensal: number }) {
+function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; metaReservaAtingida: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ticker, setTicker] = useState("");
   const [pct, setPct] = useState<number>(5);
@@ -515,6 +515,20 @@ function Ativos({ aporteMensal }: { aporteMensal: number }) {
 
   return (
     <div className="space-y-8">
+      {!metaReservaAtingida && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="pt-5 flex items-start gap-3">
+            <PiggyBank className="h-5 w-5 text-amber-300 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-amber-200">Reserva de Emergência ainda não atingida</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                A alocação automática nos ativos só é sugerida após o teto da reserva ser alcançado.
+                Até lá, a Capacidade é direcionada para a reserva (segurança primeiro — Provérbios 21:20).
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -561,6 +575,7 @@ function Ativos({ aporteMensal }: { aporteMensal: number }) {
                   key={a.id}
                   asset={a}
                   aporteMensal={aporteMensal}
+                  metaReservaAtingida={metaReservaAtingida}
                   onRemove={() => removeAsset(a.id)}
                   onPct={(p) => updatePct(a.id, p)}
                 />
