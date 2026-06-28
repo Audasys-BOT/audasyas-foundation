@@ -4,12 +4,16 @@ import { z } from "zod";
 import { AUDASYAS_SYSTEM_PROMPT } from "./guidance.functions";
 
 const AnalysisSchema = z.object({
-  parecer: z.enum(["Compra forte", "Aguardar", "Rebalancear"]),
+  parecer: z.string(),
   justificativa: z.string(),
   reflexao: z.string(),
 });
 
-export type AssetAnalysis = z.infer<typeof AnalysisSchema>;
+export type AssetAnalysis = {
+  parecer: "Compra forte" | "Aguardar" | "Rebalancear";
+  justificativa: string;
+  reflexao: string;
+};
 
 const InputSchema = z.object({
   ticker: z.string().min(1).max(12),
@@ -50,5 +54,15 @@ Responda em português do Brasil:
 - reflexao: pergunta reflexiva curta sobre o legado que este aporte constrói.`,
     });
 
-    return output;
+    const normalize = (s: string): AssetAnalysis["parecer"] => {
+      const v = s.toLowerCase();
+      if (v.includes("compra")) return "Compra forte";
+      if (v.includes("rebalance")) return "Rebalancear";
+      return "Aguardar";
+    };
+    return {
+      parecer: normalize(output.parecer),
+      justificativa: output.justificativa,
+      reflexao: output.reflexao,
+    } satisfies AssetAnalysis;
   });
