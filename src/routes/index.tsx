@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2 } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -38,6 +38,13 @@ function SimDashboard() {
   const [txs, setTxs] = useState<Tx[]>([]);
 
   const totalAportes = txs.reduce((s, t) => s + t.amount, 0);
+
+  const suggestedAporte = useMemo(() => {
+    if (txs.length === 0) return Math.max(0, liveCapacity);
+    const last = txs.slice(0, 3);
+    const avg = last.reduce((s, t) => s + t.amount, 0) / last.length;
+    return Math.max(avg, liveCapacity * 0.8);
+  }, [txs, liveCapacity]);
 
   const addTx = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,9 +85,12 @@ function SimDashboard() {
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <Tabs defaultValue="financeiro" className="space-y-8">
-          <TabsList className="grid w-full sm:w-auto grid-cols-3">
+          <TabsList className="grid w-full sm:w-auto grid-cols-4">
             <TabsTrigger value="financeiro" className="gap-2">
               <Wallet className="h-4 w-4" /> Controle Financeiro
+            </TabsTrigger>
+            <TabsTrigger value="estrategista" className="gap-2">
+              <Target className="h-4 w-4" /> Estrategista
             </TabsTrigger>
             <TabsTrigger value="leme" className="gap-2">
               <Compass className="h-4 w-4" /> Leme da Vida
@@ -186,7 +196,15 @@ function SimDashboard() {
           </TabsContent>
 
           <TabsContent value="ativos" className="mt-0">
-            <Ativos aporteMensal={liveCapacity} />
+            <Ativos aporteMensal={suggestedAporte} />
+          </TabsContent>
+
+          <TabsContent value="estrategista" className="mt-0">
+            <Estrategista
+              suggestedAporte={suggestedAporte}
+              liveCapacity={liveCapacity}
+              historicoCount={txs.length}
+            />
           </TabsContent>
         </Tabs>
       </main>
