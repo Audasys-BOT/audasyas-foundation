@@ -27,6 +27,7 @@ function SimDashboard() {
   const [salario, setSalario] = useState("");
   const [custo, setCusto] = useState("");
   const [reserva, setReserva] = useState("");
+  const [tetoReserva, setTetoReserva] = useState("");
 
   const liveCapacity = useMemo(
     () => parseNumber(salario) - parseNumber(custo),
@@ -39,12 +40,16 @@ function SimDashboard() {
 
   const totalAportes = txs.reduce((s, t) => s + t.amount, 0);
 
-  const suggestedAporte = useMemo(() => {
-    if (txs.length === 0) return Math.max(0, liveCapacity);
-    const last = txs.slice(0, 3);
-    const avg = last.reduce((s, t) => s + t.amount, 0) / last.length;
-    return Math.max(avg, liveCapacity * 0.8);
-  }, [txs, liveCapacity]);
+  // Nova lógica: priorização Reserva → Ativos.
+  // Sugestão de reserva = quanto falta para o teto, limitado pela capacidade.
+  // Aporte sugerido (para ativos) = Capacidade − Sugestão de reserva.
+  const reservaAtual = parseNumber(reserva);
+  const reservaTeto = parseNumber(tetoReserva);
+  const reservaFaltante = Math.max(0, reservaTeto - reservaAtual);
+  const cap = Math.max(0, liveCapacity);
+  const sugestaoReserva = Math.min(reservaFaltante, cap);
+  const aporteSugerido = Math.max(0, cap - sugestaoReserva);
+  const metaReservaAtingida = reservaTeto > 0 && reservaFaltante <= 0;
 
   const addTx = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,10 +122,11 @@ function SimDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <Field label="Salário Mensal (R$)" value={salario} onChange={setSalario} />
                 <Field label="Custo de Vida Fixo (R$)" value={custo} onChange={setCusto} />
-                <Field label="Reserva de Emergência (R$)" value={reserva} onChange={setReserva} />
+                <Field label="Reserva atual (R$)" value={reserva} onChange={setReserva} />
+                <Field label="Teto da Reserva (R$)" value={tetoReserva} onChange={setTetoReserva} />
               </div>
             </CardContent>
           </Card>
@@ -196,14 +202,17 @@ function SimDashboard() {
           </TabsContent>
 
           <TabsContent value="ativos" className="mt-0">
-            <Ativos aporteMensal={suggestedAporte} />
+            <Ativos aporteMensal={aporteSugerido} metaReservaAtingida={metaReservaAtingida} />
           </TabsContent>
 
           <TabsContent value="estrategista" className="mt-0">
             <Estrategista
-              suggestedAporte={suggestedAporte}
+              aporteSugerido={aporteSugerido}
+              sugestaoReserva={sugestaoReserva}
+              reservaFaltante={reservaFaltante}
+              reservaTeto={reservaTeto}
+              metaReservaAtingida={metaReservaAtingida}
               liveCapacity={liveCapacity}
-              historicoCount={txs.length}
             />
           </TabsContent>
         </Tabs>
