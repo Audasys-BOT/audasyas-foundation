@@ -698,13 +698,19 @@ function AssetRow({
 }
 
 function LegadoProjection({ aporteMensal }: { aporteMensal: number }) {
-  const [annualRate, setAnnualRate] = useState(10); // % a.a. real
+  const [annualRate, setAnnualRate] = useState(10); // % a.a. valorização
+  const [dividendYield, setDividendYield] = useState(6); // % a.a. dividendos reinvestidos
+  const [opportunityBoost, setOpportunityBoost] = useState(3); // % do aporte base
 
+  // Bola de Neve: aporte base + reinvestimento de dividendos + aportes de oportunidade
   const project = (years: number) => {
-    const r = annualRate / 100 / 12;
+    const totalAnnualRate = (annualRate + dividendYield) / 100;
+    const r = totalAnnualRate / 12;
     const n = years * 12;
-    if (r === 0) return aporteMensal * n;
-    return aporteMensal * ((Math.pow(1 + r, n) - 1) / r);
+    const aporteEfetivo = aporteMensal * (1 + opportunityBoost / 100);
+    if (r === 0) return { total: aporteEfetivo * n, aportado: aporteEfetivo * n };
+    const total = aporteEfetivo * ((Math.pow(1 + r, n) - 1) / r);
+    return { total, aportado: aporteEfetivo * n };
   };
 
   return (
@@ -718,29 +724,228 @@ function LegadoProjection({ aporteMensal }: { aporteMensal: number }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-2 sm:max-w-xs">
-          <Label>Rentabilidade anual estimada (%)</Label>
-          <Input
-            type="number"
-            min={0}
-            max={30}
-            step={0.5}
-            value={annualRate}
-            onChange={(e) => setAnnualRate(Math.max(0, Math.min(30, Number(e.target.value) || 0)))}
-          />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Valorização anual (%)</Label>
+            <Input type="number" min={0} max={30} step={0.5} value={annualRate}
+              onChange={(e) => setAnnualRate(Math.max(0, Math.min(30, Number(e.target.value) || 0)))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Dividendos reinvestidos (% a.a.)</Label>
+            <Input type="number" min={0} max={20} step={0.5} value={dividendYield}
+              onChange={(e) => setDividendYield(Math.max(0, Math.min(20, Number(e.target.value) || 0)))} />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Aporte de oportunidade (%)</Label>
+            <Input type="number" min={0} max={50} step={1} value={opportunityBoost}
+              onChange={(e) => setOpportunityBoost(Math.max(0, Math.min(50, Number(e.target.value) || 0)))} />
+          </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {[30, 50].map((y) => (
-            <div key={y} className="rounded-lg border border-border bg-background/40 p-4">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{y} anos</p>
-              <p className="text-2xl font-semibold text-primary tabular-nums mt-1">{formatBRL(project(y))}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                {y === 30 ? "Horizonte da Aposentadoria." : "Colheita da Tâmara — legado familiar."}
-              </p>
-            </div>
-          ))}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[20, 30, 50].map((y) => {
+            const p = project(y);
+            const jurosCompostos = p.total - p.aportado;
+            return (
+              <div key={y} className="rounded-lg border border-border bg-background/40 p-4">
+                <div className="flex items-center gap-2">
+                  <Snowflake className="h-3.5 w-3.5 text-primary" />
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{y} anos</p>
+                </div>
+                <p className="text-2xl font-semibold text-primary tabular-nums mt-1">{formatBRL(p.total)}</p>
+                <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                  <p>Aportado: <span className="text-foreground tabular-nums">{formatBRL(p.aportado)}</span></p>
+                  <p>Bola de neve: <span className="text-emerald-400 tabular-nums">{formatBRL(jurosCompostos)}</span></p>
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3 leading-snug">
+                  {y === 20 ? "Futuro Presente — a semente se firma." : y === 30 ? "Aposentadoria — liberdade de escolha." : "Colheita da Tâmara — legado familiar."}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ============================================================
+// ESTRATEGISTA DE APORTE — sugere divisão do aporte mensal
+// ============================================================
+
+function Estrategista({
+  suggestedAporte,
+  liveCapacity,
+  historicoCount,
+}: {
+  suggestedAporte: number;
+  liveCapacity: number;
+  historicoCount: number;
+}) {
+  const [valor, setValor] = useState("");
+  const [reservaPct, setReservaPct] = useState(30);
+  const [assets, setAssets] = useState<Asset[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(ASSETS_KEY);
+    if (raw) {
+      try { setAssets(JSON.parse(raw)); } catch { /* ignore */ }
+    }
+  }, []);
+
+  // Pré-preenche com o aporte sugerido se vazio
+  useEffect(() => {
+    if (!valor && suggestedAporte > 0) {
+      setValor(suggestedAporte.toFixed(2).replace(".", ","));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestedAporte]);
+
+  const v = parseNumber(valor);
+  const valorReserva = (v * reservaPct) / 100;
+  const valorAtivos = v - valorReserva;
+
+  const totalPctAssets = assets.reduce((s, a) => s + a.pct, 0);
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" /> Estrategista de Aporte
+          </CardTitle>
+          <CardDescription>
+            Defina o aporte antes da análise. A capacidade calculada (Salário − Custo) é apenas um piso;
+            o sistema sugere um valor com base no seu histórico recente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-border bg-background/40 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacidade calculada</p>
+              <p className="text-lg font-semibold tabular-nums mt-1">{formatBRL(liveCapacity)}</p>
+            </div>
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-primary/80">Sugestão AudasYAs</p>
+              <p className="text-lg font-semibold text-primary tabular-nums mt-1">{formatBRL(suggestedAporte)}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {historicoCount > 0 ? `Baseado nos últimos ${Math.min(3, historicoCount)} aportes` : "Sem histórico ainda — usa capacidade"}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Aporte deste mês (R$)</Label>
+              <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0,00" />
+            </div>
+          </div>
+
+          <div className="grid gap-2 sm:max-w-sm">
+            <Label className="text-xs">Reserva de Emergência / CDB (%)</Label>
+            <Input type="number" min={0} max={100} step={5} value={reservaPct}
+              onChange={(e) => setReservaPct(Math.max(0, Math.min(100, Number(e.target.value) || 0)))} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Divisão sugerida</CardTitle>
+          <CardDescription>
+            Reserva primeiro (segurança), depois ativos da Watchlist conforme os percentuais definidos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+            <div className="flex items-center gap-2">
+              <PiggyBank className="h-4 w-4 text-sky-300" />
+              <div>
+                <p className="text-sm font-medium">Reserva de Emergência / CDB</p>
+                <p className="text-[11px] text-muted-foreground">{reservaPct}% do aporte</p>
+              </div>
+            </div>
+            <p className="text-lg font-semibold text-sky-300 tabular-nums">{formatBRL(valorReserva)}</p>
+          </div>
+
+          {assets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Adicione ativos na aba <span className="text-foreground">Ativos</span> para ver a distribuição.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {assets.map((a) => (
+                <EstrategistaAssetRow
+                  key={a.id}
+                  asset={a}
+                  valorAtivos={valorAtivos}
+                  totalPctAssets={totalPctAssets}
+                />
+              ))}
+              <p className="text-[11px] text-muted-foreground pt-2 border-t border-border">
+                Total destinado a ativos: <span className="text-foreground font-semibold">{formatBRL(valorAtivos)}</span>
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function EstrategistaAssetRow({
+  asset,
+  valorAtivos,
+  totalPctAssets,
+}: {
+  asset: Asset;
+  valorAtivos: number;
+  totalPctAssets: number;
+}) {
+  const quote = useQuery<Quote>({
+    queryKey: ["quote", asset.ticker],
+    queryFn: () => fetchQuote(asset.ticker),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Distribuição proporcional ao % definido (normalizado dentro do bloco de ativos)
+  const share = totalPctAssets > 0 ? asset.pct / totalPctAssets : 0;
+  const base = valorAtivos * share;
+
+  const change = quote.data?.change ?? null;
+  const isOpportunity = change !== null && change <= -3;
+  const boost = isOpportunity ? base * 0.03 : 0;
+  const total = base + boost;
+
+  return (
+    <div className={`rounded-lg border p-3 ${isOpportunity ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-card/50"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold tracking-wide">{asset.ticker}</p>
+            <span className="text-[10px] text-muted-foreground">{asset.pct}%</span>
+            {isOpportunity && (
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded border border-emerald-500/40 text-emerald-300">
+                <Zap className="h-3 w-3" /> Oportunidade
+              </span>
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {quote.isLoading ? "Buscando preço…" : change !== null ? `Variação: ${change.toFixed(2)}%` : "—"}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-base font-semibold text-primary tabular-nums">{formatBRL(total)}</p>
+          {isOpportunity && (
+            <p className="text-[10px] text-emerald-300">
+              base {formatBRL(base)} + 3% ({formatBRL(boost)})
+            </p>
+          )}
+        </div>
+      </div>
+      {isOpportunity && (
+        <p className="text-[11px] text-muted-foreground italic mt-2 leading-snug">
+          Queda relevante hoje. Aumentar 3% reduz o preço médio e mantém a carteira na rota da Colheita da Tâmara — prudência de Provérbios 21:5.
+        </p>
+      )}
+    </div>
   );
 }
