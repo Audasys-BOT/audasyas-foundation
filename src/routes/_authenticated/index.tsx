@@ -14,7 +14,7 @@ import { getDailyGuidance } from "@/lib/guidance.functions";
 import { analyzeAsset, type AssetAnalysis } from "@/lib/assets.functions";
 import { fetchQuote, type Quote } from "@/features/assets/brapi";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: SimDashboard,
 });
 
