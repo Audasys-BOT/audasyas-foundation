@@ -441,3 +441,288 @@ function GuidanceCard() {
     </Card>
   );
 }
+
+// ============================================================
+// ATIVOS — watchlist, IA analista e projeção de legado
+// ============================================================
+
+function Ativos({ aporteMensal }: { aporteMensal: number }) {
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [ticker, setTicker] = useState("");
+  const [pct, setPct] = useState<number>(5);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(ASSETS_KEY);
+    if (raw) {
+      try {
+        setAssets(JSON.parse(raw));
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
+  const persist = (next: Asset[]) => {
+    setAssets(next);
+    if (typeof window !== "undefined") window.localStorage.setItem(ASSETS_KEY, JSON.stringify(next));
+  };
+
+  const addAsset = (e: React.FormEvent) => {
+    e.preventDefault();
+    const t = ticker.trim().toUpperCase();
+    if (!t) return;
+    if (assets.some((a) => a.ticker === t)) {
+      toast.error("Ticker já adicionado");
+      return;
+    }
+    persist([...assets, { id: crypto.randomUUID(), ticker: t, pct }]);
+    setTicker("");
+  };
+
+  const removeAsset = (id: string) => persist(assets.filter((a) => a.id !== id));
+  const updatePct = (id: string, pct: number) =>
+    persist(assets.map((a) => (a.id === id ? { ...a, pct } : a)));
+
+  const totalPct = assets.reduce((s, a) => s + a.pct, 0);
+
+  return (
+    <div className="space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LineChart className="h-5 w-5 text-primary" /> Watchlist
+          </CardTitle>
+          <CardDescription>
+            Adicione tickers da B3 (ex.: KNIP11, BBAS3). Preços via Brapi. Defina o percentual do aporte mensal destinado a cada ativo.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={addAsset} className="grid gap-3 sm:grid-cols-[1fr_140px_auto] items-end">
+            <div className="space-y-1.5">
+              <Label>Ticker</Label>
+              <Input
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                placeholder="KNIP11"
+                maxLength={12}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>% da carteira</Label>
+              <select
+                value={pct}
+                onChange={(e) => setPct(Number(e.target.value))}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value={3}>3% — Conservador</option>
+                <option value={5}>5% — Equilibrado</option>
+                <option value={10}>10% — Audaz</option>
+              </select>
+            </div>
+            <Button type="submit" className="gap-2">
+              <Plus className="h-4 w-4" /> Adicionar
+            </Button>
+          </form>
+
+          {assets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum ativo na watchlist ainda.</p>
+          ) : (
+            <div className="space-y-3">
+              {assets.map((a) => (
+                <AssetRow
+                  key={a.id}
+                  asset={a}
+                  aporteMensal={aporteMensal}
+                  onRemove={() => removeAsset(a.id)}
+                  onPct={(p) => updatePct(a.id, p)}
+                />
+              ))}
+              <p className="text-xs text-muted-foreground pt-2 border-t border-border">
+                Total alocado: <span className={totalPct > 100 ? "text-destructive font-semibold" : "text-foreground font-semibold"}>{totalPct}%</span>
+                {totalPct > 100 ? " — acima de 100%, rebalanceie." : ""}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <LegadoProjection aporteMensal={aporteMensal} />
+    </div>
+  );
+}
+
+function AssetRow({
+  asset,
+  aporteMensal,
+  onRemove,
+  onPct,
+}: {
+  asset: Asset;
+  aporteMensal: number;
+  onRemove: () => void;
+  onPct: (p: number) => void;
+}) {
+  const quote = useQuery<Quote>({
+    queryKey: ["quote", asset.ticker],
+    queryFn: () => fetchQuote(asset.ticker),
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  const analyzeFn = useServerFn(analyzeAsset);
+  const [analysis, setAnalysis] = useState<AssetAnalysis | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const valorMensal = (aporteMensal * asset.pct) / 100;
+
+  const handleAnalyze = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await analyzeFn({
+        data: {
+          ticker: asset.ticker,
+          preco_atual: quote.data?.price ?? null,
+          variacao_dia: quote.data?.change ?? null,
+          percentual_carteira: asset.pct,
+          aporte_mensal: aporteMensal,
+        },
+      });
+      setAnalysis(res);
+    } catch (e) {
+      toast.error("Falha ao analisar: " + (e as Error).message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const parecerStyle: Record<AssetAnalysis["parecer"], string> = {
+    "Compra forte": "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+    Aguardar: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    Rebalancear: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
+      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto] items-center">
+        <div>
+          <p className="font-semibold tracking-wide">{asset.ticker}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {quote.isLoading
+              ? "Buscando preço…"
+              : quote.data?.error
+              ? `— ${quote.data.error}`
+              : quote.data?.shortName || "—"}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Preço</p>
+          <p className="text-sm font-semibold tabular-nums">
+            {quote.data?.price !== null && quote.data?.price !== undefined ? formatBRL(quote.data.price) : "—"}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Dia</p>
+          <p
+            className={`text-sm font-semibold tabular-nums ${
+              (quote.data?.change ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
+            }`}
+          >
+            {quote.data?.change !== null && quote.data?.change !== undefined
+              ? `${quote.data.change.toFixed(2)}%`
+              : "—"}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase tracking-wider">% Carteira</Label>
+          <select
+            value={asset.pct}
+            onChange={(e) => onPct(Number(e.target.value))}
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value={3}>3%</option>
+            <option value={5}>5%</option>
+            <option value={10}>10%</option>
+          </select>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="gap-1"
+          >
+            {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
+            Analisar
+          </Button>
+          <Button size="icon" variant="ghost" onClick={onRemove} aria-label="Remover">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Aporte mensal destinado: <span className="text-primary font-semibold">{formatBRL(valorMensal)}</span>
+      </p>
+
+      {analysis && (
+        <div className="space-y-2 pt-2 border-t border-border">
+          <span className={`inline-block text-xs px-2 py-1 rounded border ${parecerStyle[analysis.parecer]}`}>
+            {analysis.parecer}
+          </span>
+          <p className="text-sm text-foreground leading-relaxed">{analysis.justificativa}</p>
+          <p className="text-xs italic text-muted-foreground">{analysis.reflexao}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LegadoProjection({ aporteMensal }: { aporteMensal: number }) {
+  const [annualRate, setAnnualRate] = useState(10); // % a.a. real
+
+  const project = (years: number) => {
+    const r = annualRate / 100 / 12;
+    const n = years * 12;
+    if (r === 0) return aporteMensal * n;
+    return aporteMensal * ((Math.pow(1 + r, n) - 1) / r);
+  };
+
+  return (
+    <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Trees className="h-5 w-5 text-primary" /> Projeção de Legado
+        </CardTitle>
+        <CardDescription>
+          Juros compostos sobre o aporte mensal atual ({formatBRL(aporteMensal)}). Simulação — não considera inflação nem aportes variáveis.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-2 sm:max-w-xs">
+          <Label>Rentabilidade anual estimada (%)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={30}
+            step={0.5}
+            value={annualRate}
+            onChange={(e) => setAnnualRate(Math.max(0, Math.min(30, Number(e.target.value) || 0)))}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[30, 50].map((y) => (
+            <div key={y} className="rounded-lg border border-border bg-background/40 p-4">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{y} anos</p>
+              <p className="text-2xl font-semibold text-primary tabular-nums mt-1">{formatBRL(project(y))}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {y === 30 ? "Horizonte da Aposentadoria." : "Colheita da Tâmara — legado familiar."}
+              </p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
