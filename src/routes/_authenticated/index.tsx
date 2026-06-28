@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/")({
 type Tx = { id: string; amount: number; description?: string; date: string };
 
 type Asset = { id: string; ticker: string; pct: number };
-const ASSETS_KEY = "audasyas:assets";
+const ASSETS_KEY_BASE = "audasyas:assets";
 
 function SimDashboard() {
   const [salario, setSalario] = useState("");
@@ -198,11 +198,11 @@ function SimDashboard() {
           </TabsContent>
 
           <TabsContent value="leme" className="mt-0">
-            <LemeDaVida />
+            <LemeDaVida userId={userId} />
           </TabsContent>
 
           <TabsContent value="ativos" className="mt-0">
-            <Ativos aporteMensal={aporteSugerido} metaReservaAtingida={metaReservaAtingida} />
+            <Ativos userId={userId} aporteMensal={aporteSugerido} metaReservaAtingida={metaReservaAtingida} />
           </TabsContent>
 
           <TabsContent value="estrategista" className="mt-0">
@@ -255,7 +255,7 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
 // LEME DA VIDA — long-term life compass
 // ============================================================
 
-const BIRTH_KEY = "audasyas:birthdate";
+const BIRTH_KEY_BASE = "audasyas:birthdate";
 
 type Milestone = {
   age: number;
