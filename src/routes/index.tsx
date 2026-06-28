@@ -7,16 +7,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
+import { analyzeAsset, type AssetAnalysis } from "@/lib/assets.functions";
+import { fetchQuote, type Quote } from "@/features/assets/brapi";
 
 export const Route = createFileRoute("/")({
   component: SimDashboard,
 });
 
 type Tx = { id: string; amount: number; description?: string; date: string };
+
+type Asset = { id: string; ticker: string; pct: number };
+const ASSETS_KEY = "audasyas:assets";
 
 function SimDashboard() {
   const [salario, setSalario] = useState("");
@@ -73,12 +78,15 @@ function SimDashboard() {
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <Tabs defaultValue="financeiro" className="space-y-8">
-          <TabsList className="grid w-full sm:w-auto grid-cols-2">
+          <TabsList className="grid w-full sm:w-auto grid-cols-3">
             <TabsTrigger value="financeiro" className="gap-2">
               <Wallet className="h-4 w-4" /> Controle Financeiro
             </TabsTrigger>
             <TabsTrigger value="leme" className="gap-2">
               <Compass className="h-4 w-4" /> Leme da Vida
+            </TabsTrigger>
+            <TabsTrigger value="ativos" className="gap-2">
+              <LineChart className="h-4 w-4" /> Ativos
             </TabsTrigger>
           </TabsList>
 
@@ -175,6 +183,10 @@ function SimDashboard() {
 
           <TabsContent value="leme" className="mt-0">
             <LemeDaVida />
+          </TabsContent>
+
+          <TabsContent value="ativos" className="mt-0">
+            <Ativos aporteMensal={liveCapacity} />
           </TabsContent>
         </Tabs>
       </main>
