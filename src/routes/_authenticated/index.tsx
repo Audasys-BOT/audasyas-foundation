@@ -15,6 +15,7 @@ import { analyzeAsset, type AssetAnalysis } from "@/lib/assets.functions";
 import { fetchQuote, type Quote } from "@/features/assets/brapi";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "@tanstack/react-router";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: SimDashboard,
@@ -91,9 +92,12 @@ function SimDashboard() {
             </h1>
             <p className="text-xs text-muted-foreground">{user.email ?? "Sessão ativa"}</p>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
-            <LogOut className="h-4 w-4" /> Sair
-          </Button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
 
