@@ -75,7 +75,7 @@ function SimDashboard() {
     } else if (pctProgressoReserva >= 75) {
       return { rankAtual: "🌳 Nível 3: Árvore Firme", proximoRank: "🏆 Nível 4: Colheita da Tâmara (6 Meses)", valorProximoAlvo: tetoFinal };
     } else if (pctProgressoReserva >= 50) {
-      return { rankAtual: "🌿 Nível 2: Raiz Forte", proximoRank: "🌳 Nível 3: Árvore Firme (4.5 Meses)", valorProximoAlvo: tetoFinal * 0.75; };
+      return { rankAtual: "🌿 Nível 2: Raiz Forte", proximoRank: "🌳 Nível 3: Árvore Firme (4.5 Meses)", valorProximoAlvo: tetoFinal * 0.75 };
     } else if (pctProgressoReserva >= 16.6) {
       return { rankAtual: "🌱 Nível 1: Broto", proximoRank: "🌿 Nível 2: Raiz Forte (3 Meses)", valorProximoAlvo: tetoFinal * 0.5 };
     }
@@ -85,7 +85,7 @@ function SimDashboard() {
   const faltamParaProximo = Math.max(0, valorProximoAlvo - reservaAcumulada);
   const reservaFaltanteTotal = Math.max(0, tetoFinal - reservaAcumulada);
   const sugestaoReservaMes = Math.min(reservaFaltanteTotal, liveCapacity);
-  const aporteSugeridoAtivos = Math.max(0, liveCapacity - window.sugestaoReservaMes);
+  const aporteSugeridoAtivos = Math.max(0, liveCapacity - sugestaoReservaMes);
   const metaReservaAtingida = tetoFinal > 0 && reservaFaltanteTotal <= 0;
 
   // --- AÇÕES DE AJUSTE DA RESERVA ---
