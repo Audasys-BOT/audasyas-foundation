@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2 } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -298,7 +298,7 @@ function SimDashboard() {
           ) : (
             <>
               <TabsContent value="leme" className="mt-0">
-                <LemeDaVida userId={userId} />
+                <LemeDaVida userId={userId} aporteMensalSugerido={aporteSugeridoAtivos} />
               </TabsContent>
 
               <TabsContent value="ativos" className="mt-0">
@@ -325,9 +325,7 @@ function SimDashboard() {
   );
 }
 
-// ============================================================
-// ESTRATEGISTA DE APORTE & CALCULADORA BOLA DE NEVE
-// ============================================================
+// ... [ESTRATEGISTA e BOLA DE NEVE PERMANECEM INTACTOS AQUI] ...
 type Profile = { horizon: string; family: string; risk: string };
 
 function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reservaTeto, metaReservaAtingida, liveCapacity, userId, custoFixo }: { aporteSugerido: number; sugestaoReserva: number; reservaFaltante: number; reservaTeto: number; metaReservaAtingida: boolean; liveCapacity: number; userId: string; custoFixo: number }) {
@@ -357,18 +355,12 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
     return <ProfileOnboarding onComplete={saveProfile} />;
   }
 
-  // --- MATEMÁTICA DA BOLA DE NEVE ---
-  // Consideramos uma taxa conservadora limpa de 8% ao ano em dividendos/juros.
   const TAXA_ANUAL_DIVIDENDOS = 0.08; 
   const taxaMensal = TAXA_ANUAL_DIVIDENDOS / 12;
-  const aporteAcao = valorAtivos > 0 ? valorAtivos : 1; // Previne divisão por zero visual
+  const aporteAcao = valorAtivos > 0 ? valorAtivos : 1; 
 
-  // Função para calcular meses necessários para atingir uma Renda Passiva Alvo
   const calcularMesesParaRenda = (rendaAlvo: number) => {
     if (rendaAlvo <= 0) return 0;
-    // Fórmula do Valor Presente/Futuro ajustada para descobrir o 'n'
-    // FV = P * (((1 + r)^n - 1) / r)  => Como Renda = FV * r, então: FV = Renda / r
-    // Logo: (Renda / r) = P * (((1 + r)^n - 1) / r) => Renda = P * ((1 + r)^n - 1)
     const n = Math.log((rendaAlvo / aporteAcao) + 1) / Math.log(1 + taxaMensal);
     return Math.ceil(n);
   };
@@ -381,13 +373,12 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
     return `${anos} anos e ${meses} meses`;
   };
 
-  const mesesPingo = calcularMesesParaRenda(150); // R$ 150 mensais paga a internet
-  const mesesVirada = calcularMesesParaRenda(aporteAcao); // Dividendos = Seu aporte
-  const mesesLegado = calcularMesesParaRenda(custoFixo); // Independência total
+  const mesesPingo = calcularMesesParaRenda(150); 
+  const mesesVirada = calcularMesesParaRenda(aporteAcao); 
+  const mesesLegado = calcularMesesParaRenda(custoFixo); 
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* HEADER DO PERFIL */}
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background">
         <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
@@ -404,7 +395,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
         </CardContent>
       </Card>
 
-      {/* DIVISÃO DE FLUXO */}
       <Card>
         <CardHeader>
           <CardTitle>Divisão Sugerida de Fluxo</CardTitle>
@@ -432,7 +422,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
         </CardContent>
       </Card>
 
-      {/* CALCULADORA BOLA DE NEVE */}
       <Card className="border-primary/40 shadow-lg shadow-primary/5">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -444,8 +433,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          
-          {/* MARCO 1 */}
           <div className="relative pl-6 border-l-2 border-emerald-500/30 pb-4">
             <div className="absolute -left-[11px] top-0 bg-background border-2 border-emerald-500 p-1 rounded-full">
               <Droplets className="h-3 w-3 text-emerald-500" />
@@ -456,8 +443,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
               <p className="text-lg font-semibold text-foreground pt-1">Em {converterMeses(mesesPingo)}</p>
             </div>
           </div>
-
-          {/* MARCO 2 */}
           <div className="relative pl-6 border-l-2 border-sky-500/30 pb-4">
             <div className="absolute -left-[11px] top-0 bg-background border-2 border-sky-500 p-1 rounded-full">
               <TrendingUp className="h-3 w-3 text-sky-500" />
@@ -468,8 +453,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
               <p className="text-lg font-semibold text-foreground pt-1">Em {converterMeses(mesesVirada)}</p>
             </div>
           </div>
-
-          {/* MARCO 3 */}
           <div className="relative pl-6 border-l-2 border-transparent">
             <div className="absolute -left-[11px] top-0 bg-background border-2 border-amber-500 p-1 rounded-full">
               <Crown className="h-3 w-3 text-amber-500" />
@@ -480,14 +463,12 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
               <p className="text-lg font-semibold text-foreground pt-1">Em {converterMeses(mesesLegado)}</p>
             </div>
           </div>
-
         </CardContent>
       </Card>
     </div>
   );
 }
 
-// --- ONBOARDING DO PERFIL (Descoberta de Propósito) ---
 function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void }) {
   const [step, setStep] = useState(1);
   const [horizon, setHorizon] = useState("");
@@ -498,7 +479,6 @@ function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void })
     if (step === 1 && !horizon) return toast.error("Selecione um horizonte.");
     if (step === 2 && !family) return toast.error("Selecione o objetivo familiar.");
     if (step === 3 && !risk) return toast.error("Selecione sua reação.");
-    
     if (step < 3) setStep(step + 1);
     else onComplete({ horizon, family, risk });
   };
@@ -520,7 +500,6 @@ function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void })
         </div>
       </CardHeader>
       <CardContent className="pt-8">
-        
         {step === 1 && (
           <div className="space-y-4 animate-in slide-in-from-right-4">
             <h3 className="text-lg font-semibold text-center mb-6">Qual é o seu Horizonte de Colheita Ativa?</h3>
@@ -529,7 +508,6 @@ function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void })
             <OptionCard selected={horizon === "legado"} onClick={() => setHorizon("legado")} title="Legado Puro" desc="Foco 100% no longo prazo, pensando estritamente na próxima geração." />
           </div>
         )}
-
         {step === 2 && (
           <div className="space-y-4 animate-in slide-in-from-right-4">
             <h3 className="text-lg font-semibold text-center mb-6">Como você deseja Blindar o Fluxo Familiar?</h3>
@@ -537,7 +515,6 @@ function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void })
             <OptionCard selected={family === "familiar"} onClick={() => setFamily("familiar")} title="Geração de Renda Familiar" desc="Quero que o sistema projete uma renda mensal que sustente minha esposa e crie um patrimônio perpétuo para herdeiros." highlight />
           </div>
         )}
-
         {step === 3 && (
           <div className="space-y-4 animate-in slide-in-from-right-4">
             <h3 className="text-lg font-semibold text-center mb-6">Como seu psicológico reage à oscilação do mercado?</h3>
@@ -545,7 +522,6 @@ function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void })
             <OptionCard selected={risk === "arrojado"} onClick={() => setRisk("arrojado")} title="Foco na Geração de Valor" desc="Entendo que o mercado oscila no curto prazo, mas busco a máxima eficiência de dividendos para multiplicar o patrimônio." highlight />
           </div>
         )}
-
         <div className="mt-10 flex justify-end">
           <Button onClick={handleNext} className="w-full sm:w-auto px-8 gap-2">
             {step === 3 ? "Processar Perfil" : "Próximo Passo"} <ArrowDownRight className="h-4 w-4 -rotate-90" />
@@ -566,7 +542,6 @@ function OptionCard({ title, desc, selected, highlight, onClick }: { title: stri
   );
 }
 
-// ... [O RESTANTE DO CÓDIGO PERMANECE IGUAL (Field, KpiCard, LemeDaVida, Ativos)] ...
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1.5">
@@ -592,6 +567,9 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
   );
 }
 
+// ============================================================
+// LEME DA VIDA (Agora com Radar Comportamental e Check-in)
+// ============================================================
 const BIRTH_KEY_BASE = "audasyas:birthdate";
 type Milestone = { age: number; title: string; subtitle: string; description: string; icon: ReactNode; accent: string };
 
@@ -601,20 +579,49 @@ const MILESTONES: Milestone[] = [
   { age: 50, title: "Colheita da Tâmara", subtitle: "50 anos", description: "Legado familiar consolidado. A árvore plantada agora frutifica para as próximas gerações.", icon: <Trees className="h-5 w-5" />, accent: "from-amber-500/20 to-amber-500/5 border-amber-500/30" },
 ];
 
-function LemeDaVida({ userId }: { userId: string }) {
+function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMensalSugerido: number }) {
   const [birth, setBirth] = useState<string>("");
+  
+  // Estados do Guardião de Disciplina
+  const [aporteConfirmado, setAporteConfirmado] = useState<boolean | null>(null);
+  const [rendimentoReal, setRendimentoReal] = useState("0,80");
+  const metaRendimento = 0.80; // A meta conservadora real de FIIs
+  
+  // Simulador de Patrimônio Acumulado (Para o Radar calcular o ajuste de R$ sobre algo palpável)
+  // Na versão final conectaremos ao banco, aqui usamos uma base de teste.
+  const [patrimonioBase] = useState(15000); 
+
   useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(`${BIRTH_KEY_BASE}:${userId}`) : null;
     if (stored) setBirth(stored);
-  }, []);
+  }, [userId]);
 
   const persistBirth = (v: string) => {
     setBirth(v);
     if (typeof window !== "undefined") window.localStorage.setItem(`${BIRTH_KEY_BASE}:${userId}`, v);
   };
 
+  const handleConfirmaAporte = (status: boolean) => {
+    setAporteConfirmado(status);
+    if (status) {
+      toast.success("Legado protegido! Aporte registrado com sucesso.");
+    } else {
+      toast.error("O tempo não perdoa. Ajuste suas contas para recuperar esse aporte.", { duration: 5000 });
+    }
+  };
+
+  // Matemática do Desvio (O cafezinho a menos)
+  const rendNum = parseNumber(rendimentoReal);
+  const faltaRendimento = Math.max(0, metaRendimento - rendNum);
+  const valorCompensacao = (patrimonioBase * faltaRendimento) / 100;
+  const aporteComAjuste = aporteMensalSugerido + valorCompensacao;
+
+  const mesAtualNome = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date());
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      
+      {/* LINHA DO TEMPO */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -634,6 +641,94 @@ function LemeDaVida({ userId }: { userId: string }) {
           <MilestoneCard key={m.age} milestone={m} birth={birth} />
         ))}
       </section>
+
+      {/* GUARDIÃO DA DISCIPLINA E RADAR */}
+      <div className="grid gap-6 md:grid-cols-2">
+        
+        {/* Card 1: Check-in de Aporte */}
+        <Card className={`border-2 transition-colors ${aporteConfirmado === true ? 'border-emerald-500/30 bg-emerald-500/5' : aporteConfirmado === false ? 'border-red-500/30 bg-red-500/5' : 'border-border'}`}>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CheckCircle2 className={`h-5 w-5 ${aporteConfirmado === true ? 'text-emerald-500' : 'text-primary'}`} /> 
+              Guardião da Disciplina
+            </CardTitle>
+            <CardDescription className="capitalize">Referência: {mesAtualNome}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {aporteConfirmado === null ? (
+              <>
+                <p className="text-sm text-foreground leading-relaxed">
+                  Os <strong className="text-primary">{formatBRL(aporteMensalSugerido)}</strong> da segurança familiar já foram aportados na corretora este mês?
+                </p>
+                <div className="flex gap-3 pt-2">
+                  <Button onClick={() => handleConfirmaAporte(true)} className="w-full bg-emerald-600 hover:bg-emerald-700">Sim, feito!</Button>
+                  <Button onClick={() => handleConfirmaAporte(false)} variant="destructive" className="w-full">Não consegui</Button>
+                </div>
+              </>
+            ) : aporteConfirmado === true ? (
+              <div className="space-y-2">
+                <p className="text-emerald-400 font-semibold text-lg">Perfeito. O legado continua firme.</p>
+                <p className="text-sm text-muted-foreground">Sua mente está resguardada. A rota de colheita segue exatamente conforme o projetado.</p>
+                <Button variant="outline" size="sm" onClick={() => setAporteConfirmado(null)} className="mt-2 text-xs">Desfazer Check-in</Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-red-400 font-semibold text-lg flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" /> Atenção à rota!
+                </p>
+                <p className="text-sm text-muted-foreground">Seu eu do futuro e sua família perderam 30 dias de juros compostos reais. Cada mês pulado empurra a sua colheita para mais longe. Recupere o controle no mês que vem.</p>
+                <Button variant="outline" size="sm" onClick={() => setAporteConfirmado(null)} className="mt-2 text-xs">Tentar Novamente</Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Card 2: Radar de Ajuste de Rota (O cafezinho a menos) */}
+        <Card className="border-primary/20 bg-gradient-to-br from-background to-card shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="h-5 w-5 text-sky-500" /> Radar de Ajuste de Rota
+            </CardTitle>
+            <CardDescription>Calibre o curso da sua carteira.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex items-end gap-4">
+              <div className="space-y-1.5 flex-1">
+                <Label className="text-xs">Rendimento Real do Mês (%)</Label>
+                <div className="flex items-center gap-2">
+                  <Input inputMode="decimal" value={rendimentoReal} onChange={(e) => setRendimentoReal(e.target.value)} className="w-24 text-center font-bold" />
+                  <span className="text-xs text-muted-foreground">Meta: {metaRendimento}%</span>
+                </div>
+              </div>
+            </div>
+
+            {faltaRendimento > 0 ? (
+              <div className="p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 space-y-2 animate-in slide-in-from-bottom-2">
+                <p className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Mercado em Baixa (- {faltaRendimento.toFixed(2)}%)
+                </p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Sua carteira gerou <strong className="text-foreground">R$ {valorCompensacao.toFixed(2).replace('.', ',')}</strong> a menos que o planejado. 
+                </p>
+                <div className="pt-2 border-t border-amber-500/10 flex items-start gap-2">
+                  <Coffee className="h-4 w-4 text-amber-400 mt-0.5" />
+                  <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                    <strong>Sugestão Tática:</strong> Adicione este valor ao seu próximo aporte, totalizando <strong className="text-white">R$ {aporteComAjuste.toFixed(2).replace('.', ',')}</strong>. É um café a menos hoje para manter o futuro inabalável e a mente blindada.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-3">
+                <TrendingUp className="h-5 w-5 text-emerald-400" />
+                <p className="text-xs text-emerald-300">
+                  Rendimento dentro ou acima da meta. A velocidade da bola de neve está perfeita!
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <GuidanceCard />
     </div>
   );
@@ -749,6 +844,7 @@ function GuidanceCard() {
   );
 }
 
+// ... [COMPONENTE ATIVOS PERMANECE INTACTO AQUI] ...
 function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string; aporteMensal: number; metaReservaAtingida: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ticker, setTicker] = useState("");
