@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -24,6 +24,7 @@ export const Route = createFileRoute("/_authenticated/")({
 type Tx = { id: string; amount: number; description?: string; date: string };
 type Asset = { id: string; ticker: string; pct: number };
 const ASSETS_KEY_BASE = "audasyas:assets";
+const PROFILE_KEY_BASE = "audasyas:invest_profile";
 
 function SimDashboard() {
   const router = useRouter();
@@ -35,38 +36,27 @@ function SimDashboard() {
     router.navigate({ to: "/auth", replace: true });
   };
 
-  // --- ESTADOS PRINCIPAIS (COM MEMÓRIA LOCAL E AUTOMAÇÃO) ---
   const [activeTab, setActiveTab] = useState("financeiro");
   const [salario, setSalario] = useState("");
-  
-  // Custo de vida manual vs automático
   const [custoManual, setCustoManual] = useState("");
   const [isEditingCusto, setIsEditingCusto] = useState(false);
-  
-  // Reserva acumulada e movimentações rápidas
   const [reservaAcumulada, setReservaAcumulada] = useState(0);
   const [valorAjusteReserva, setValorAjusteReserva] = useState("");
-
-  // Teto da reserva manual vs automático
   const [tetoManual, setTetoManual] = useState("");
   const [isEditingTeto, setIsEditingTeto] = useState(false);
-
   const [aporteValor, setAporteValor] = useState("");
   const [aporteDesc, setAporteDesc] = useState("");
   const [txs, setTxs] = useState<Tx[]>([]);
 
-  // --- CÁLCULOS AUTOMÁTICOS DE SAÚDE FINANCEIRA ---
   const salarioNum = parseNumber(salario);
-  const custoIdeal = salarioNum * 0.6; // Recomendação: 60% máximo
+  const custoIdeal = salarioNum * 0.6; 
   const custoFinal = isEditingCusto ? parseNumber(custoManual) : custoIdeal;
-  
-  const tetoRecomendado = custoFinal * 6; // Recomendação: 6 meses de custo fixo
+  const tetoRecomendado = custoFinal * 6; 
   const tetoFinal = isEditingTeto ? parseNumber(tetoManual) : tetoRecomendado;
 
   const liveCapacity = Math.max(0, salarioNum - custoFinal);
   const percentualCusto = salarioNum > 0 ? (custoFinal / salarioNum) * 100 : 0;
 
-  // --- MÓDULO DE RANKS DA RESERVA DE EMERGÊNCIA ---
   const pctProgressoReserva = tetoFinal > 0 ? Math.min(100, (reservaAcumulada / tetoFinal) * 100) : 0;
   
   const { rankAtual, proximoRank, valorProximoAlvo } = useMemo(() => {
@@ -85,17 +75,14 @@ function SimDashboard() {
   const faltamParaProximo = Math.max(0, valorProximoAlvo - reservaAcumulada);
   const reservaFaltanteTotal = Math.max(0, tetoFinal - reservaAcumulada);
   
-  // --- REGRA DE CONSTRUÇÃO SIMULTÂNEA (60% Reserva / 40% Ativos) ---
   const sugestaoReservaMes = Math.min(reservaFaltanteTotal, liveCapacity * 0.6);
   const aporteSugeridoAtivos = Math.max(0, liveCapacity - sugestaoReservaMes);
   const metaReservaAtingida = tetoFinal > 0 && reservaFaltanteTotal <= 0;
 
-  // --- CASH TIERING (RESERVA EM CAMADAS) ---
   const LIMITE_PRONTIDAO = 2000;
   const isProntidaoSegura = reservaAcumulada >= LIMITE_PRONTIDAO;
   const faltamProntidao = Math.max(0, LIMITE_PRONTIDAO - reservaAcumulada);
 
-  // --- AÇÕES DE AJUSTE DA RESERVA ---
   const handleGuardarReserva = () => {
     const valor = parseNumber(valorAjusteReserva);
     if (valor <= 0) return toast.error("Informe um valor válido");
@@ -164,7 +151,7 @@ function SimDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          {/* ABA 1: CONTROLE FINANCEIRO (CENTRAL DE DIAGNÓSTICO) */}
+          {/* ABA 1: CONTROLE FINANCEIRO */}
           <TabsContent value="financeiro" className="space-y-8 mt-0">
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard icon={<Wallet className="h-4 w-4" />} label="Salário Mensal" value={formatBRL(salarioNum)} />
@@ -183,14 +170,12 @@ function SimDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {/* Input Salário */}
                     <div className="space-y-1.5">
                       <Label>Salário Mensal (R$)</Label>
                       <Input inputMode="decimal" value={salario} onChange={(e) => setSalario(e.target.value)} placeholder="0,00" />
                       <p className="text-[11px] text-muted-foreground">Sua base de cálculo essencial.</p>
                     </div>
 
-                    {/* Input Custo Fixo Automático/Manual */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <Label>Custo de Vida Fixo (R$)</Label>
@@ -205,7 +190,6 @@ function SimDashboard() {
                     </div>
                   </div>
 
-                  {/* SEÇÃO DA RESERVA AUTOMÁTICA E RANKING */}
                   <div className="border-t border-border pt-6 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
@@ -226,7 +210,6 @@ function SimDashboard() {
                       </div>
                     </div>
 
-                    {/* Barra de Progresso com os Ticks dos Níveis */}
                     <div className="space-y-1.5">
                       <div className="w-full bg-muted rounded-full h-3 overflow-hidden relative border border-border">
                         <div className="bg-primary h-full transition-all duration-300" style={{ width: `${pctProgressoReserva}%` }} />
@@ -244,7 +227,6 @@ function SimDashboard() {
                       </div>
                     </div>
 
-                    {/* AVISO EDUCATIVO (CASH TIERING) */}
                     <div className={`p-4 rounded-lg border space-y-3 transition-colors ${metaReservaAtingida ? "bg-emerald-500/5 border-emerald-500/20" : isProntidaoSegura ? "bg-sky-500/5 border-sky-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
                       <div className="flex items-center gap-2">
                         {metaReservaAtingida ? <ShieldCheck className="h-4 w-4 text-emerald-400" /> : isProntidaoSegura ? <TrendingUp className="h-4 w-4 text-sky-400" /> : <ShieldAlert className="h-4 w-4 text-amber-400" />}
@@ -261,7 +243,6 @@ function SimDashboard() {
                       </p>
                     </div>
 
-                    {/* Gestão Dinâmica da Reserva (Guardar e Retirar) */}
                     <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end bg-background/30 p-3 rounded-lg border border-border">
                       <div className="space-y-1.5">
                         <Label className="text-xs">Movimentar Fundo de Emergência (R$)</Label>
@@ -280,7 +261,6 @@ function SimDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Bloco Novo Aporte */}
               <Card>
                 <CardHeader>
                   <CardTitle>Simulador Instantâneo</CardTitle>
@@ -300,7 +280,6 @@ function SimDashboard() {
             </div>
           </TabsContent>
 
-          {/* TRAVA INTELIGENTE/AMIGÁVEL PARA AS OUTRAS ABAS */}
           {salarioNum === 0 ? (
             <TabsContent value={activeTab} className="mt-0">
               <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-card p-12 text-center max-w-2xl mx-auto space-y-4">
@@ -335,6 +314,7 @@ function SimDashboard() {
                   reservaTeto={tetoFinal}
                   metaReservaAtingida={metaReservaAtingida}
                   liveCapacity={liveCapacity}
+                  custoFixo={custoFinal}
                 />
               </TabsContent>
             </>
@@ -345,6 +325,248 @@ function SimDashboard() {
   );
 }
 
+// ============================================================
+// ESTRATEGISTA DE APORTE & CALCULADORA BOLA DE NEVE
+// ============================================================
+type Profile = { horizon: string; family: string; risk: string };
+
+function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reservaTeto, metaReservaAtingida, liveCapacity, userId, custoFixo }: { aporteSugerido: number; sugestaoReserva: number; reservaFaltante: number; reservaTeto: number; metaReservaAtingida: boolean; liveCapacity: number; userId: string; custoFixo: number }) {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [valorManual, setValorManual] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(`${PROFILE_KEY_BASE}:${userId}`);
+    if (stored) { try { setProfile(JSON.parse(stored)); } catch { } }
+  }, [userId]);
+
+  const saveProfile = (p: Profile) => {
+    setProfile(p);
+    if (typeof window !== "undefined") window.localStorage.setItem(`${PROFILE_KEY_BASE}:${userId}`, JSON.stringify(p));
+  };
+
+  useEffect(() => {
+    if (!valorManual && liveCapacity > 0) setValorManual(liveCapacity.toFixed(2).replace(".", ","));
+  }, [liveCapacity]);
+
+  const v = parseNumber(valorManual);
+  const valorReserva = metaReservaAtingida ? 0 : Math.min(reservaFaltante, v * 0.6);
+  const valorAtivos = metaReservaAtingida ? v : Math.max(0, v - valorReserva);
+
+  if (!profile) {
+    return <ProfileOnboarding onComplete={saveProfile} />;
+  }
+
+  // --- MATEMÁTICA DA BOLA DE NEVE ---
+  // Consideramos uma taxa conservadora limpa de 8% ao ano em dividendos/juros.
+  const TAXA_ANUAL_DIVIDENDOS = 0.08; 
+  const taxaMensal = TAXA_ANUAL_DIVIDENDOS / 12;
+  const aporteAcao = valorAtivos > 0 ? valorAtivos : 1; // Previne divisão por zero visual
+
+  // Função para calcular meses necessários para atingir uma Renda Passiva Alvo
+  const calcularMesesParaRenda = (rendaAlvo: number) => {
+    if (rendaAlvo <= 0) return 0;
+    // Fórmula do Valor Presente/Futuro ajustada para descobrir o 'n'
+    // FV = P * (((1 + r)^n - 1) / r)  => Como Renda = FV * r, então: FV = Renda / r
+    // Logo: (Renda / r) = P * (((1 + r)^n - 1) / r) => Renda = P * ((1 + r)^n - 1)
+    const n = Math.log((rendaAlvo / aporteAcao) + 1) / Math.log(1 + taxaMensal);
+    return Math.ceil(n);
+  };
+
+  const converterMeses = (totalMeses: number) => {
+    const anos = Math.floor(totalMeses / 12);
+    const meses = totalMeses % 12;
+    if (anos === 0) return `${meses} meses`;
+    if (meses === 0) return `${anos} anos`;
+    return `${anos} anos e ${meses} meses`;
+  };
+
+  const mesesPingo = calcularMesesParaRenda(150); // R$ 150 mensais paga a internet
+  const mesesVirada = calcularMesesParaRenda(aporteAcao); // Dividendos = Seu aporte
+  const mesesLegado = calcularMesesParaRenda(custoFixo); // Independência total
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* HEADER DO PERFIL */}
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background">
+        <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" /> Perfil Mapeado: Protetor de Legado
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              A IA configurou sua carteira com foco em <strong className="text-foreground">Geração de Renda Familiar</strong> para os próximos anos.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setProfile(null)} className="gap-2 text-xs">
+            <RefreshCw className="h-3 w-3" /> Refazer Análise
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* DIVISÃO DE FLUXO */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Divisão Sugerida de Fluxo</CardTitle>
+          <CardDescription>
+            {metaReservaAtingida 
+              ? "Reserva blindada. 100% livre para alocação em ativos." 
+              : "Construção Simultânea (60% retido para Reserva e 40% livre para Ativos)."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-border bg-background/40 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacidade Mês</p>
+              <Input className="h-8 text-lg font-semibold mt-1 bg-transparent border-none px-0 shadow-none focus-visible:ring-0" inputMode="decimal" value={valorManual} onChange={(e) => setValorManual(e.target.value)} />
+            </div>
+            <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-sky-300">Reter p/ Reserva</p>
+              <p className="text-lg font-semibold text-sky-300 mt-1">{formatBRL(valorReserva)}</p>
+            </div>
+            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
+              <p className="text-[10px] uppercase tracking-widest text-primary">Direcionar p/ Ativos</p>
+              <p className="text-lg font-semibold text-primary mt-1">{formatBRL(valorAtivos)}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* CALCULADORA BOLA DE NEVE */}
+      <Card className="border-primary/40 shadow-lg shadow-primary/5">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Snowflake className="h-5 w-5 text-primary" />
+            <CardTitle>A Avalanche Dinâmica</CardTitle>
+          </div>
+          <CardDescription>
+            Com aportes de <strong className="text-primary">{formatBRL(aporteAcao)}/mês</strong> rendendo uma média realista de 8% ao ano em dividendos, veja quando você atingirá os 3 marcos da liberdade em vida.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          
+          {/* MARCO 1 */}
+          <div className="relative pl-6 border-l-2 border-emerald-500/30 pb-4">
+            <div className="absolute -left-[11px] top-0 bg-background border-2 border-emerald-500 p-1 rounded-full">
+              <Droplets className="h-3 w-3 text-emerald-500" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-emerald-400">Marco 1: O Primeiro Pingo (Renda: R$ 150/mês)</h4>
+              <p className="text-xs text-muted-foreground">O sistema paga uma conta básica perpétua (Ex: Internet da família).</p>
+              <p className="text-lg font-semibold text-foreground pt-1">Em {converterMeses(mesesPingo)}</p>
+            </div>
+          </div>
+
+          {/* MARCO 2 */}
+          <div className="relative pl-6 border-l-2 border-sky-500/30 pb-4">
+            <div className="absolute -left-[11px] top-0 bg-background border-2 border-sky-500 p-1 rounded-full">
+              <TrendingUp className="h-3 w-3 text-sky-500" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-sky-400">Marco 2: Ponto de Virada (Renda: {formatBRL(aporteAcao)}/mês)</h4>
+              <p className="text-xs text-muted-foreground">O dinheiro gerado pelo próprio dinheiro empata com o seu esforço de trabalho.</p>
+              <p className="text-lg font-semibold text-foreground pt-1">Em {converterMeses(mesesVirada)}</p>
+            </div>
+          </div>
+
+          {/* MARCO 3 */}
+          <div className="relative pl-6 border-l-2 border-transparent">
+            <div className="absolute -left-[11px] top-0 bg-background border-2 border-amber-500 p-1 rounded-full">
+              <Crown className="h-3 w-3 text-amber-500" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-amber-400">Marco 3: A Colheita de Legado (Renda: {formatBRL(custoFixo)}/mês)</h4>
+              <p className="text-xs text-muted-foreground">O patrimônio atingiu massa crítica. Os dividendos pagam 100% do Custo de Vida Fixo da família para sempre.</p>
+              <p className="text-lg font-semibold text-foreground pt-1">Em {converterMeses(mesesLegado)}</p>
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// --- ONBOARDING DO PERFIL (Descoberta de Propósito) ---
+function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void }) {
+  const [step, setStep] = useState(1);
+  const [horizon, setHorizon] = useState("");
+  const [family, setFamily] = useState("");
+  const [risk, setRisk] = useState("");
+
+  const handleNext = () => {
+    if (step === 1 && !horizon) return toast.error("Selecione um horizonte.");
+    if (step === 2 && !family) return toast.error("Selecione o objetivo familiar.");
+    if (step === 3 && !risk) return toast.error("Selecione sua reação.");
+    
+    if (step < 3) setStep(step + 1);
+    else onComplete({ horizon, family, risk });
+  };
+
+  return (
+    <Card className="max-w-2xl mx-auto border-primary/20 shadow-xl shadow-primary/5 mt-4">
+      <CardHeader className="text-center pb-8 border-b border-border/50">
+        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+          <Brain className="h-6 w-6 text-primary" />
+        </div>
+        <CardTitle className="text-2xl">Descoberta de Propósito</CardTitle>
+        <CardDescription className="text-sm max-w-md mx-auto mt-2">
+          Antes de projetar o seu futuro, a IA precisa entender qual legado você quer deixar.
+        </CardDescription>
+        <div className="flex justify-center gap-2 mt-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className={`h-1.5 w-12 rounded-full transition-colors ${step >= i ? "bg-primary" : "bg-muted"}`} />
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-8">
+        
+        {step === 1 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4">
+            <h3 className="text-lg font-semibold text-center mb-6">Qual é o seu Horizonte de Colheita Ativa?</h3>
+            <OptionCard selected={horizon === "curto"} onClick={() => setHorizon("curto")} title="Curto Prazo" desc="Quero focar em resgatar tudo em até 5 anos." />
+            <OptionCard selected={horizon === "hibrido"} onClick={() => setHorizon("hibrido")} title="Híbrido Estratégico (Recomendado)" desc="Quero ver os frutos crescerem nos próximos 10 a 20 anos para aproveitar em vida, mas deixando a raiz intacta." highlight />
+            <OptionCard selected={horizon === "legado"} onClick={() => setHorizon("legado")} title="Legado Puro" desc="Foco 100% no longo prazo, pensando estritamente na próxima geração." />
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4">
+            <h3 className="text-lg font-semibold text-center mb-6">Como você deseja Blindar o Fluxo Familiar?</h3>
+            <OptionCard selected={family === "individual"} onClick={() => setFamily("individual")} title="Foco Individual" desc="Apenas gerar patrimônio e liquidez para o meu CPF." />
+            <OptionCard selected={family === "familiar"} onClick={() => setFamily("familiar")} title="Geração de Renda Familiar" desc="Quero que o sistema projete uma renda mensal que sustente minha esposa e crie um patrimônio perpétuo para herdeiros." highlight />
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4 animate-in slide-in-from-right-4">
+            <h3 className="text-lg font-semibold text-center mb-6">Como seu psicológico reage à oscilação do mercado?</h3>
+            <OptionCard selected={risk === "conservador"} onClick={() => setRisk("conservador")} title="Defensivo" desc="Prefiro a certeza absoluta, mesmo que o dinheiro renda bem menos ao longo dos anos." />
+            <OptionCard selected={risk === "arrojado"} onClick={() => setRisk("arrojado")} title="Foco na Geração de Valor" desc="Entendo que o mercado oscila no curto prazo, mas busco a máxima eficiência de dividendos para multiplicar o patrimônio." highlight />
+          </div>
+        )}
+
+        <div className="mt-10 flex justify-end">
+          <Button onClick={handleNext} className="w-full sm:w-auto px-8 gap-2">
+            {step === 3 ? "Processar Perfil" : "Próximo Passo"} <ArrowDownRight className="h-4 w-4 -rotate-90" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OptionCard({ title, desc, selected, highlight, onClick }: { title: string; desc: string; selected: boolean; highlight?: boolean; onClick: () => void }) {
+  return (
+    <div onClick={onClick} className={`relative cursor-pointer rounded-xl p-4 border-2 transition-all duration-200 ${selected ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/50"}`}>
+      {selected && <CheckCircle2 className="absolute top-4 right-4 h-5 w-5 text-primary" />}
+      <h4 className={`font-semibold ${selected ? "text-primary" : "text-foreground"} ${highlight && !selected ? "text-sky-400" : ""}`}>{title}</h4>
+      <p className="text-xs text-muted-foreground mt-1 pr-8 leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+// ... [O RESTANTE DO CÓDIGO PERMANECE IGUAL (Field, KpiCard, LemeDaVida, Ativos)] ...
 function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="space-y-1.5">
@@ -370,9 +592,6 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
   );
 }
 
-// ============================================================
-// LEME DA VIDA — long-term life compass
-// ============================================================
 const BIRTH_KEY_BASE = "audasyas:birthdate";
 type Milestone = { age: number; title: string; subtitle: string; description: string; icon: ReactNode; accent: string };
 
@@ -530,9 +749,6 @@ function GuidanceCard() {
   );
 }
 
-// ============================================================
-// ATIVOS — watchlist, IA analista e projeção de legado
-// ============================================================
 function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string; aporteMensal: number; metaReservaAtingida: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [ticker, setTicker] = useState("");
@@ -685,60 +901,5 @@ function LegadoProjection({ aporteMensal }: { aporteMensal: number }) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-// ============================================================
-// ESTRATEGISTA DE APORTE — sugere divisão do aporte mensal
-// ============================================================
-function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reservaTeto, metaReservaAtingida, liveCapacity, userId }: { aporteSugerido: number; sugestaoReserva: number; reservaFaltante: number; reservaTeto: number; metaReservaAtingida: boolean; liveCapacity: number; userId: string }) {
-  const [valor, setValor] = useState("");
-  const [assets, setAssets] = useState<Asset[]>([]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(`${ASSETS_KEY_BASE}:${userId}`);
-    if (raw) { try { setAssets(JSON.parse(raw)); } catch { } }
-  }, []);
-
-  useEffect(() => {
-    if (!valor && liveCapacity > 0) setValor(liveCapacity.toFixed(2).replace(".", ","));
-  }, [liveCapacity]);
-
-  const v = parseNumber(valor);
-  
-  // Aplica a regra 60/40 com base no valor digitado (mantendo limite do que falta na reserva)
-  const valorReserva = metaReservaAtingida ? 0 : Math.min(reservaFaltante, v * 0.6);
-  const valorAtivos = metaReservaAtingida ? v : Math.max(0, v - valorReserva);
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Divisão Sugerida de Fluxo</CardTitle>
-          <CardDescription>
-            {metaReservaAtingida 
-              ? "Reserva blindada. 100% livre para alocação em ativos." 
-              : "Construção Simultânea (60% retido para Reserva e 40% livre para Ativos)."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-border bg-background/40 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacidade Mês</p>
-              <Input className="h-8 text-lg font-semibold mt-1 bg-transparent border-none px-0 shadow-none focus-visible:ring-0" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
-            </div>
-            <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-sky-300">Reter p/ Reserva</p>
-              <p className="text-lg font-semibold text-sky-300 mt-1">{formatBRL(valorReserva)}</p>
-            </div>
-            <div className="rounded-lg border border-primary/40 bg-primary/5 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-primary">Direcionar p/ Ativos</p>
-              <p className="text-lg font-semibold text-primary mt-1">{formatBRL(valorAtivos)}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
