@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -84,9 +84,16 @@ function SimDashboard() {
 
   const faltamParaProximo = Math.max(0, valorProximoAlvo - reservaAcumulada);
   const reservaFaltanteTotal = Math.max(0, tetoFinal - reservaAcumulada);
-  const sugestaoReservaMes = Math.min(reservaFaltanteTotal, liveCapacity);
+  
+  // --- REGRA DE CONSTRUÇÃO SIMULTÂNEA (60% Reserva / 40% Ativos) ---
+  const sugestaoReservaMes = Math.min(reservaFaltanteTotal, liveCapacity * 0.6);
   const aporteSugeridoAtivos = Math.max(0, liveCapacity - sugestaoReservaMes);
   const metaReservaAtingida = tetoFinal > 0 && reservaFaltanteTotal <= 0;
+
+  // --- CASH TIERING (RESERVA EM CAMADAS) ---
+  const LIMITE_PRONTIDAO = 2000;
+  const isProntidaoSegura = reservaAcumulada >= LIMITE_PRONTIDAO;
+  const faltamProntidao = Math.max(0, LIMITE_PRONTIDAO - reservaAcumulada);
 
   // --- AÇÕES DE AJUSTE DA RESERVA ---
   const handleGuardarReserva = () => {
@@ -162,7 +169,7 @@ function SimDashboard() {
             <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard icon={<Wallet className="h-4 w-4" />} label="Salário Mensal" value={formatBRL(salarioNum)} />
               <KpiCard icon={<ArrowDownRight className="h-4 w-4" />} label="Custo de Vida Fixo" value={formatBRL(custoFinal)} />
-              <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Capacidade de Aporte" value={formatBRL(liveCapacity)} highlight />
+              <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Disponível para Ativos" value={formatBRL(aporteSugeridoAtivos)} highlight />
               <KpiCard icon={<PiggyBank className="h-4 w-4" />} label="Reserva Acumulada" value={formatBRL(reservaAcumulada)} />
             </section>
 
@@ -230,11 +237,28 @@ function SimDashboard() {
                       <div className="flex justify-between text-[10px] text-muted-foreground px-0.5">
                         <span>Progresso: {pctProgressoReserva.toFixed(1)}%</span>
                         {pctProgressoReserva < 100 ? (
-                          <span>Próximo alvo: Próximo nível precisa de mais {formatBRL(faltamParaProximo)}</span>
+                          <span>Próximo alvo: Mais {formatBRL(faltamParaProximo)} para o {proximoRank}</span>
                         ) : (
                           <span className="text-emerald-400 font-bold">Reserva Totalmente Blindada!</span>
                         )}
                       </div>
+                    </div>
+
+                    {/* AVISO EDUCATIVO (CASH TIERING) */}
+                    <div className={`p-4 rounded-lg border space-y-3 transition-colors ${metaReservaAtingida ? "bg-emerald-500/5 border-emerald-500/20" : isProntidaoSegura ? "bg-sky-500/5 border-sky-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
+                      <div className="flex items-center gap-2">
+                        {metaReservaAtingida ? <ShieldCheck className="h-4 w-4 text-emerald-400" /> : isProntidaoSegura ? <TrendingUp className="h-4 w-4 text-sky-400" /> : <ShieldAlert className="h-4 w-4 text-amber-400" />}
+                        <h5 className="font-semibold text-sm">
+                          {metaReservaAtingida ? "Escudo Concluído!" : isProntidaoSegura ? "Camada de Resiliência (LCI/LCA)" : "Camada de Prontidão (CDB Diário)"}
+                        </h5>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {metaReservaAtingida 
+                          ? "Sua segurança está garantida. 100% da sua capacidade de aporte agora flui diretamente para a multiplicação de patrimônio (Aba Ativos)." 
+                          : !isProntidaoSegura
+                          ? `Estratégia Simultânea 60/40 ativada. Direcione os R$ ${formatBRL(sugestaoReservaMes)} da reserva deste mês para um CDB 100% CDI com Liquidez Diária. Faltam R$ ${formatBRL(faltamProntidao)} para liberar o nível de LCI/LCA.`
+                          : `Base imediata blindada! A partir de agora, divida os R$ ${formatBRL(sugestaoReservaMes)} da sua reserva mensal: mantenha 30% no CDB Diário e direcione 70% para LCI/LCA (isento de IR e maior rentabilidade).`}
+                      </p>
                     </div>
 
                     {/* Gestão Dinâmica da Reserva (Guardar e Retirar) */}
@@ -280,8 +304,8 @@ function SimDashboard() {
           {salarioNum === 0 ? (
             <TabsContent value={activeTab} className="mt-0">
               <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-card p-12 text-center max-w-2xl mx-auto space-y-4">
-                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-between justify-center text-primary">
-                  <ShieldAlert className="h-6 w-6 mx-auto" />
+                <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                  <ShieldAlert className="h-6 w-6" />
                 </div>
                 <h3 className="text-lg font-bold">Falta apenas um detalhe estratégico...</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -539,13 +563,13 @@ function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string;
   return (
     <div className="space-y-8">
       {!metaReservaAtingida && (
-        <Card className="border-amber-500/40 bg-amber-500/5">
+        <Card className="border-sky-500/40 bg-sky-500/5">
           <CardContent className="pt-5 flex items-start gap-3">
-            <PiggyBank className="h-5 w-5 text-amber-300 mt-0.5" />
+            <PiggyBank className="h-5 w-5 text-sky-300 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-amber-200">Reserva de Emergência ainda não atingida</p>
+              <p className="font-medium text-sky-200">Construção Simultânea Ativada (40% Liberado)</p>
               <p className="text-xs text-muted-foreground mt-1">
-                A alocação nos ativos é liberada após a reserva atingir o teto recomendado.
+                A sua Reserva de Emergência ainda não atingiu o teto, mas pela regra de equilíbrio, o sistema já liberou 40% da sua sobra mensal para você iniciar os aportes em Renda Variável e FIIs.
               </p>
             </div>
           </CardContent>
@@ -607,7 +631,7 @@ function AssetRow({ asset, aporteMensal, metaReservaAtingida, onRemove, onPct }:
     try {
       const res = await analyzeFn({ data: { ticker: asset.ticker, preco_atual: quote.data?.price ?? null, variacao_dia: change, percentual_carteira: asset.pct, aporte_mensal: aporteMensal } });
       setAnalysis(res);
-      if (metaReservaAtingida && valorSugerido > 0) {
+      if (valorSugerido > 0) {
         setValorAporte(valorSugerido.toFixed(2).replace(".", ","));
       }
     } catch (e) { } finally { setAnalyzing(false); }
@@ -678,22 +702,31 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reserv
   }, []);
 
   useEffect(() => {
-    if (!valor && aporteSugerido > 0) setValor(aporteSugerido.toFixed(2).replace(".", ","));
-  }, [aporteSugerido]);
+    if (!valor && liveCapacity > 0) setValor(liveCapacity.toFixed(2).replace(".", ","));
+  }, [liveCapacity]);
 
   const v = parseNumber(valor);
-  const valorReserva = metaReservaAtingida ? 0 : Math.min(reservaFaltante, v);
+  
+  // Aplica a regra 60/40 com base no valor digitado (mantendo limite do que falta na reserva)
+  const valorReserva = metaReservaAtingida ? 0 : Math.min(reservaFaltante, v * 0.6);
   const valorAtivos = metaReservaAtingida ? v : Math.max(0, v - valorReserva);
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle>Divisão Sugerida de Fluxo</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Divisão Sugerida de Fluxo</CardTitle>
+          <CardDescription>
+            {metaReservaAtingida 
+              ? "Reserva blindada. 100% livre para alocação em ativos." 
+              : "Construção Simultânea (60% retido para Reserva e 40% livre para Ativos)."}
+          </CardDescription>
+        </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border border-border bg-background/40 p-3">
               <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Capacidade Mês</p>
-              <p className="text-lg font-semibold mt-1">{formatBRL(liveCapacity)}</p>
+              <Input className="h-8 text-lg font-semibold mt-1 bg-transparent border-none px-0 shadow-none focus-visible:ring-0" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
             </div>
             <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
               <p className="text-[10px] uppercase tracking-widest text-sky-300">Reter p/ Reserva</p>
