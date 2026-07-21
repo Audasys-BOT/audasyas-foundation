@@ -7,12 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Building, Briefcase } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
-import { analyzeAsset, type AssetAnalysis } from "@/lib/assets.functions";
-import { fetchQuote, type Quote } from "@/features/assets/brapi";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -22,8 +20,6 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 type Tx = { id: string; amount: number; description?: string; date: string };
-type Asset = { id: string; ticker: string; pct: number };
-const ASSETS_KEY_BASE = "audasyas:assets";
 const PROFILE_KEY_BASE = "audasyas:invest_profile";
 
 function SimDashboard() {
@@ -99,8 +95,6 @@ function SimDashboard() {
     setValorAjusteReserva("");
     toast.warning(`Retirada de R$ ${valor.toFixed(2)} registrada da Reserva`);
   };
-
-  const totalAportes = txs.reduce((s, t) => s + t.amount, 0);
 
   const addTx = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,23 +254,6 @@ function SimDashboard() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Simulador Instantâneo</CardTitle>
-                  <CardDescription>Simule aportes manuais avulsos para testes de tela.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form className="space-y-3" onSubmit={addTx}>
-                    <Field label="Valor (R$)" value={aporteValor} onChange={setAporteValor} />
-                    <div className="space-y-1.5">
-                      <Label>Descrição (opcional)</Label>
-                      <Input value={aporteDesc} onChange={(e) => setAporteDesc(e.target.value)} maxLength={120} placeholder="Ex: Aporte Geral" />
-                    </div>
-                    <Button type="submit" className="w-full">Registrar aporte</Button>
-                  </form>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
@@ -302,7 +279,7 @@ function SimDashboard() {
               </TabsContent>
 
               <TabsContent value="ativos" className="mt-0">
-                <Ativos userId={userId} aporteMensal={aporteSugeridoAtivos} metaReservaAtingida={metaReservaAtingida} />
+                <Ativos aporteMensal={aporteSugeridoAtivos} metaReservaAtingida={metaReservaAtingida} />
               </TabsContent>
 
               <TabsContent value="estrategista" className="mt-0">
@@ -325,7 +302,9 @@ function SimDashboard() {
   );
 }
 
-// ... [ESTRATEGISTA e ONBOARDING PERMANECEM INTACTOS AQUI] ...
+// ============================================================
+// ESTRATEGISTA (Inalterado)
+// ============================================================
 type Profile = { horizon: string; family: string; risk: string };
 
 function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reservaTeto, metaReservaAtingida, liveCapacity, userId, custoFixo }: { aporteSugerido: number; sugestaoReserva: number; reservaFaltante: number; reservaTeto: number; metaReservaAtingida: boolean; liveCapacity: number; userId: string; custoFixo: number }) {
@@ -493,11 +472,6 @@ function ProfileOnboarding({ onComplete }: { onComplete: (p: Profile) => void })
         <CardDescription className="text-sm max-w-md mx-auto mt-2">
           Antes de projetar o seu futuro, a IA precisa entender qual legado você quer deixar.
         </CardDescription>
-        <div className="flex justify-center gap-2 mt-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={`h-1.5 w-12 rounded-full transition-colors ${step >= i ? "bg-primary" : "bg-muted"}`} />
-          ))}
-        </div>
       </CardHeader>
       <CardContent className="pt-8">
         {step === 1 && (
@@ -568,7 +542,7 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
 }
 
 // ============================================================
-// LEME DA VIDA (Com Guardião, Radar e MATEMÁTICA DO LEGADO)
+// LEME DA VIDA (Inalterado)
 // ============================================================
 const BIRTH_KEY_BASE = "audasyas:birthdate";
 type Milestone = { age: number; title: string; subtitle: string; description: string; icon: ReactNode; accent: string };
@@ -612,10 +586,9 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
 
   const mesAtualNome = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date());
 
-  // --- FUNÇÃO PARA CALCULAR A MATEMÁTICA DO LEGADO ---
   const calcularProjecaoLegado = (anos: number) => {
-    const aporteBaseReal = aporteMensalSugerido > 0 ? aporteMensalSugerido : 100; // Evita cálculo zerado se n tiver preenchido lá atrás
-    const taxaMes = 0.008; // 0.8% ao mês 
+    const aporteBaseReal = aporteMensalSugerido > 0 ? aporteMensalSugerido : 100; 
+    const taxaMes = 0.008; 
     const n = anos * 12;
     const patrimonio = aporteBaseReal * ((Math.pow(1 + taxaMes, n) - 1) / taxaMes);
     const rendaMensal = patrimonio * taxaMes;
@@ -624,7 +597,6 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -646,7 +618,6 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
         ))}
       </section>
 
-      {/* NOVA SESSÃO: VISÃO DE FUTURO (A MATEMÁTICA DO LEGADO) */}
       <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-background to-background">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
@@ -663,17 +634,14 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
               return (
                 <div key={anos} className="rounded-xl border border-amber-500/10 bg-card p-5 space-y-3 relative overflow-hidden">
                   <div className="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/5 rounded-full blur-xl"></div>
-                  
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500/80">{anos} Anos</p>
                     <span className="text-[10px] text-muted-foreground">{anos * 12} meses</span>
                   </div>
-                  
                   <div>
                     <p className="text-[11px] text-muted-foreground mb-1">Patrimônio Acumulado</p>
                     <p className="text-2xl font-bold text-foreground">{formatBRL(proj.patrimonio)}</p>
                   </div>
-                  
                   <div className="pt-3 border-t border-border">
                     <p className="text-[11px] text-muted-foreground mb-1">Renda Passiva Limpa</p>
                     <p className="text-lg font-semibold text-emerald-400">~ {formatBRL(proj.rendaMensal)} / mês</p>
@@ -767,7 +735,6 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
           </CardContent>
         </Card>
       </div>
-
       <GuidanceCard />
     </div>
   );
@@ -883,36 +850,83 @@ function GuidanceCard() {
   );
 }
 
-// ... [COMPONENTE ATIVOS PERMANECE INTACTO AQUI] ...
-function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string; aporteMensal: number; metaReservaAtingida: boolean }) {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [ticker, setTicker] = useState("");
-  const [pct, setPct] = useState<number>(5);
+// ============================================================
+// ATIVOS (Vitrine de Kits de IA - O Motor Prático do Home Broker)
+// ============================================================
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(`${ASSETS_KEY_BASE}:${userId}`);
-    if (raw) { try { setAssets(JSON.parse(raw)); } catch { } }
-  }, []);
+const KITS_ALOCACAO = [
+  {
+    id: 'alto',
+    name: 'Kit Alto (Acelerador)',
+    icon: <Zap className="h-5 w-5 text-red-500" />,
+    borderColor: 'border-red-500/30',
+    bgColor: 'bg-red-500/5',
+    titleColor: 'text-red-400',
+    badge: 'Alto Risco / Alta Volatilidade',
+    assets: [
+      { ticker: 'PETR4', split: 20, type: 'Ação (Commodity)' },
+      { ticker: 'VALE3', split: 20, type: 'Ação (Commodity)' },
+      { ticker: 'URPR11', split: 30, type: 'FII (Papel High Yield)' },
+      { ticker: 'HCTR11', split: 30, type: 'FII (Papel Alto Risco)' },
+    ],
+    info: 'Cuidado: Estes fundos pagam dividendos muito acima da média porque emprestam dinheiro para obras de alto risco (loteamentos, resorts). Se a obra atrasar, o dividendo zera e a cota derrete. As ações dependem do preço global do minério e petróleo. É excelente na alta, terrível na baixa.'
+  },
+  {
+    id: 'medio',
+    name: 'Kit Médio (Expansão)',
+    icon: <Activity className="h-5 w-5 text-sky-500" />,
+    borderColor: 'border-sky-500/30',
+    bgColor: 'bg-sky-500/5',
+    titleColor: 'text-sky-400',
+    badge: 'Risco Moderado / Crescimento',
+    assets: [
+      { ticker: 'ITUB4', split: 25, type: 'Ação (Banco Privado)' },
+      { ticker: 'EGIE3', split: 25, type: 'Ação (Energia)' },
+      { ticker: 'XPML11', split: 25, type: 'FII (Shoppings)' },
+      { ticker: 'VISC11', split: 25, type: 'FII (Shoppings)' },
+    ],
+    info: 'Risco Moderado: Shoppings são excelentes imóveis, mas dependem do consumo das famílias. Se o país entra em crise e os juros sobem, o consumo cai e o valor dos aluguéis sofre leves reajustes. Exige estômago no médio prazo.'
+  },
+  {
+    id: 'recomendado',
+    name: 'Kit Recomendado (Legado)',
+    icon: <Crown className="h-5 w-5 text-amber-500" />,
+    borderColor: 'border-amber-500/40 shadow-lg shadow-amber-500/10',
+    bgColor: 'bg-amber-500/10',
+    titleColor: 'text-amber-500',
+    badge: 'O Legado Inabalável (Sua Meta)',
+    isMVP: true,
+    assets: [
+      { ticker: 'BBAS3', split: 25, type: 'Ação (Banco Centenário)' },
+      { ticker: 'TAEE11', split: 25, type: 'Ação (Transmissão)' },
+      { ticker: 'HGLG11', split: 25, type: 'FII (Logística Premium)' },
+      { ticker: 'BTLG11', split: 25, type: 'FII (Galpões)' },
+    ],
+    info: 'Risco Diluído: As pessoas podem cortar compras no shopping, mas ninguém deixa de pagar a conta de luz (TAEE11), e indústrias gigantes não param de usar galpões (HGLG11). Esta carteira é uma máquina constante e segura de gerar renda passiva para o longo prazo.'
+  }
+];
 
-  const persist = (next: Asset[]) => {
-    setAssets(next);
-    if (typeof window !== "undefined") window.localStorage.setItem(`${ASSETS_KEY_BASE}:${userId}`, JSON.stringify(next));
+function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; metaReservaAtingida: boolean }) {
+  const [selectedKit, setSelectedKit] = useState<string | null>(null);
+  const [expandedInfo, setExpandedInfo] = useState<string | null>(null);
+
+  const aporteAtivo = aporteMensal > 0 ? aporteMensal : 800; // Fallback visual para testar a tela
+
+  const toggleInfo = (id: string) => {
+    if (expandedInfo === id) setExpandedInfo(null);
+    else setExpandedInfo(id);
   };
 
-  const addAsset = (e: React.FormEvent) => {
-    e.preventDefault();
-    const t = ticker.trim().toUpperCase();
-    if (!t) return;
-    if (assets.some((a) => a.ticker === t)) return toast.error("Ticker já adicionado");
-    persist([...assets, { id: crypto.randomUUID(), ticker: t, pct }]);
-    setTicker("");
+  const handleApplyKit = (id: string) => {
+    setSelectedKit(id);
+    toast.success("Kit Estratégico Aplicado! Veja a ordem de compra abaixo.");
   };
 
-  const totalPct = assets.reduce((s, a) => s + a.pct, 0);
+  const activeKitData = KITS_ALOCACAO.find(k => k.id === selectedKit);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      
       {!metaReservaAtingida && (
         <Card className="border-sky-500/40 bg-sky-500/5">
           <CardContent className="pt-5 flex items-start gap-3">
@@ -920,87 +934,122 @@ function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string;
             <div className="text-sm">
               <p className="font-medium text-sky-200">Construção Simultânea Ativada (40% Liberado)</p>
               <p className="text-xs text-muted-foreground mt-1">
-                A sua Reserva de Emergência ainda não atingiu o teto, mas pela regra de equilíbrio, o sistema já liberou 40% da sua sobra mensal para você iniciar os aportes em Renda Variável e FIIs.
+                A sua Reserva de Emergência ainda não atingiu o teto. O sistema já liberou R$ {formatBRL(aporteAtivo)} da sua sobra mensal para você iniciar os aportes na Vitrine abaixo.
               </p>
             </div>
           </CardContent>
         </Card>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>Watchlist</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <form onSubmit={addAsset} className="grid gap-3 sm:grid-cols-[1fr_140px_auto] items-end">
-            <div className="space-y-1.5">
-              <Label>Ticker</Label>
-              <Input value={ticker} onChange={(e) => setTicker(e.target.value.toUpperCase())} placeholder="KNIP11" maxLength={12} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>% da carteira</Label>
-              <select value={pct} onChange={(e) => setPct(Number(e.target.value))} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                <option value={3}>3% — Conservador</option>
-                <option value={5}>5% — Equilibrado</option>
-                <option value={10}>10% — Audaz</option>
-              </select>
-            </div>
-            <Button type="submit"><Plus className="h-4 w-4" /> Adicionar</Button>
-          </form>
-          {assets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum ativo monitorado.</p>
-          ) : (
-            <div className="space-y-3">
-              {assets.map((a) => (
-                <AssetRow key={a.id} asset={a} aporteMensal={aporteMensal} metaReservaAtingida={metaReservaAtingida} onRemove={() => persist(assets.filter((x) => x.id !== a.id))} onPct={(p) => persist(assets.map((x) => x.id === a.id ? { ...x, pct: p } : x))} />
-              ))}
-              <p className="text-xs text-muted-foreground pt-2 border-t border-border">
-                Total alocado: <span>{totalPct}%</span>
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
-function AssetRow({ asset, aporteMensal, metaReservaAtingida, onRemove, onPct }: { asset: Asset; aporteMensal: number; metaReservaAtingida: boolean; onRemove: () => void; onPct: (p: number) => void }) {
-  const quote = useQuery<Quote>({ queryKey: ["quote", asset.ticker], queryFn: () => fetchQuote(asset.ticker), staleTime: 60_000, refetchOnWindowFocus: false });
-  const analyzeFn = useServerFn(analyzeAsset);
-  const [analysis, setAnalysis] = useState<AssetAnalysis | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [valorAporte, setValorAporte] = useState("");
+      {/* VITRINE DE KITS DA IA */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-1">
+          <Brain className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold">Vitrine de Inteligência (Kits de Alocação)</h2>
+        </div>
+        <p className="text-sm text-muted-foreground px-1 mb-6">
+          Não procure no escuro. A IA estruturou 3 caminhos testados pelo tempo. Escolha o seu nível de risco para dividir os seus <strong className="text-foreground">{formatBRL(aporteAtivo)}</strong> livres do mês.
+        </p>
 
-  const change = quote.data?.change ?? null;
-  const isOpportunity = change !== null && change <= -3;
-  const valorBase = (aporteMensal * asset.pct) / 100;
-  const valorSugerido = isOpportunity ? valorBase * 1.03 : valorBase;
+        <div className="grid gap-6 md:grid-cols-3">
+          {KITS_ALOCACAO.map((kit) => (
+            <Card key={kit.id} className={`border-2 transition-all flex flex-col ${kit.borderColor} ${selectedKit === kit.id ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : 'hover:-translate-y-1'}`}>
+              <CardHeader className={`pb-4 border-b border-border/50 ${kit.bgColor}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground bg-background/50 px-2 py-1 rounded">
+                    {kit.badge}
+                  </span>
+                  {kit.isMVP && <span className="absolute -top-3 -right-3 bg-amber-500 text-black text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">Ideal p/ Legado</span>}
+                </div>
+                <CardTitle className={`text-lg flex items-center gap-2 ${kit.titleColor}`}>
+                  {kit.icon} {kit.name}
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent className="pt-4 flex-1 flex flex-col space-y-4">
+                
+                {/* Ativos do Kit Visualização Rápida */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {kit.assets.map(asset => (
+                    <div key={asset.ticker} className="bg-muted/50 p-2 rounded text-center border border-border/50">
+                      <p className="font-bold text-sm text-foreground">{asset.ticker}</p>
+                      <p className="text-[9px] text-muted-foreground truncate">{asset.type}</p>
+                    </div>
+                  ))}
+                </div>
 
-  const handleAnalyze = async () => {
-    setAnalyzing(true);
-    try {
-      const res = await analyzeFn({ data: { ticker: asset.ticker, preco_atual: quote.data?.price ?? null, variacao_dia: change, percentual_carteira: asset.pct, aporte_mensal: aporteMensal } });
-      setAnalysis(res);
-      if (valorSugerido > 0) {
-        setValorAporte(valorSugerido.toFixed(2).replace(".", ","));
-      }
-    } catch (e) { } finally { setAnalyzing(false); }
-  };
+                {/* Balão de Pensamento Toggle */}
+                <div className="mt-auto">
+                  <Button variant="ghost" className="w-full text-xs gap-2 mb-2 h-8 text-muted-foreground hover:text-foreground" onClick={() => toggleInfo(kit.id)}>
+                    <Info className="h-4 w-4" /> Entenda o Risco da IA
+                  </Button>
+                  
+                  {expandedInfo === kit.id && (
+                    <div className="p-3 mb-4 text-xs leading-relaxed rounded-lg bg-card border border-border text-foreground animate-in zoom-in-95">
+                      {kit.info}
+                    </div>
+                  )}
 
-  return (
-    <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto_auto] items-center">
-        <div><p className="font-semibold">{asset.ticker}</p></div>
-        <div className="text-right"><p className="text-sm font-semibold">{quote.data?.price ? formatBRL(quote.data.price) : "—"}</p></div>
-        <div className="text-right"><p className={`text-sm font-semibold ${(change ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>{change !== null ? `${change.toFixed(2)}%` : "—"}</p></div>
-        <div className="flex gap-1">
-          <Button size="sm" variant="secondary" onClick={handleAnalyze} disabled={analyzing}>
-            {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />} Analisar
-          </Button>
-          <Button size="icon" variant="ghost" onClick={onRemove}><Trash2 className="h-4 w-4" /></Button>
+                  <Button 
+                    className={`w-full ${kit.isMVP ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}`}
+                    variant={selectedKit === kit.id ? 'secondary' : 'default'}
+                    onClick={() => handleApplyKit(kit.id)}
+                  >
+                    {selectedKit === kit.id ? 'Kit Selecionado' : 'Aplicar Kit ao Meu Mês'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
-      {analysis && <p className="text-xs italic text-muted-foreground mt-1">{analysis.justificativa}</p>}
+
+      {/* ORDEM DE EXECUÇÃO (Aparece apenas quando seleciona o kit) */}
+      {activeKitData && (
+        <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-background shadow-xl mt-8 animate-in slide-in-from-bottom-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Briefcase className="h-6 w-6 text-primary" /> Ordem de Execução (Home Broker)
+            </CardTitle>
+            <CardDescription>
+              Abra o aplicativo da sua corretora agora. Compre exatamente os ativos abaixo usando os <strong className="text-foreground">{formatBRL(aporteAtivo)}</strong> disponíveis.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {activeKitData.assets.map((asset) => {
+                const valorExatoCompra = (aporteAtivo * asset.split) / 100;
+                return (
+                  <div key={asset.ticker} className="p-4 rounded-xl border border-border bg-card shadow-sm space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-2xl font-black text-foreground">{asset.ticker}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{asset.type}</p>
+                      </div>
+                      <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">{asset.split}%</span>
+                    </div>
+                    <div className="pt-2 border-t border-border">
+                      <p className="text-[11px] text-muted-foreground mb-0.5">Comprar aprox.</p>
+                      <p className="text-lg font-bold text-emerald-400">{formatBRL(valorExatoCompra)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start gap-3">
+              <ShieldCheck className="h-5 w-5 text-emerald-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-emerald-400">Tudo pronto, Aldo!</p>
+                <p className="text-xs text-emerald-200/70 mt-1 leading-relaxed">
+                  Após executar essas compras na corretora, o seu dever deste mês está cumprido. Vá até a aba <strong>Leme da Vida</strong>, clique em "Sim, feito!" no Guardião da Disciplina e durma com a mente tranquila de quem protegeu a própria família.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
     </div>
   );
 }
