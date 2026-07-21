@@ -325,7 +325,7 @@ function SimDashboard() {
   );
 }
 
-// ... [ESTRATEGISTA e BOLA DE NEVE PERMANECEM INTACTOS AQUI] ...
+// ... [ESTRATEGISTA e ONBOARDING PERMANECEM INTACTOS AQUI] ...
 type Profile = { horizon: string; family: string; risk: string };
 
 function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, reservaTeto, metaReservaAtingida, liveCapacity, userId, custoFixo }: { aporteSugerido: number; sugestaoReserva: number; reservaFaltante: number; reservaTeto: number; metaReservaAtingida: boolean; liveCapacity: number; userId: string; custoFixo: number }) {
@@ -568,7 +568,7 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
 }
 
 // ============================================================
-// LEME DA VIDA (Agora com Radar Comportamental e Check-in)
+// LEME DA VIDA (Com Guardião, Radar e MATEMÁTICA DO LEGADO)
 // ============================================================
 const BIRTH_KEY_BASE = "audasyas:birthdate";
 type Milestone = { age: number; title: string; subtitle: string; description: string; icon: ReactNode; accent: string };
@@ -581,14 +581,9 @@ const MILESTONES: Milestone[] = [
 
 function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMensalSugerido: number }) {
   const [birth, setBirth] = useState<string>("");
-  
-  // Estados do Guardião de Disciplina
   const [aporteConfirmado, setAporteConfirmado] = useState<boolean | null>(null);
   const [rendimentoReal, setRendimentoReal] = useState("0,80");
-  const metaRendimento = 0.80; // A meta conservadora real de FIIs
-  
-  // Simulador de Patrimônio Acumulado (Para o Radar calcular o ajuste de R$ sobre algo palpável)
-  // Na versão final conectaremos ao banco, aqui usamos uma base de teste.
+  const metaRendimento = 0.80; 
   const [patrimonioBase] = useState(15000); 
 
   useEffect(() => {
@@ -610,7 +605,6 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
     }
   };
 
-  // Matemática do Desvio (O cafezinho a menos)
   const rendNum = parseNumber(rendimentoReal);
   const faltaRendimento = Math.max(0, metaRendimento - rendNum);
   const valorCompensacao = (patrimonioBase * faltaRendimento) / 100;
@@ -618,10 +612,19 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
 
   const mesAtualNome = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date());
 
+  // --- FUNÇÃO PARA CALCULAR A MATEMÁTICA DO LEGADO ---
+  const calcularProjecaoLegado = (anos: number) => {
+    const aporteBaseReal = aporteMensalSugerido > 0 ? aporteMensalSugerido : 100; // Evita cálculo zerado se n tiver preenchido lá atrás
+    const taxaMes = 0.008; // 0.8% ao mês 
+    const n = anos * 12;
+    const patrimonio = aporteBaseReal * ((Math.pow(1 + taxaMes, n) - 1) / taxaMes);
+    const rendaMensal = patrimonio * taxaMes;
+    return { patrimonio, rendaMensal };
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
-      {/* LINHA DO TEMPO */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -636,16 +639,53 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
           </div>
         </CardContent>
       </Card>
+
       <section className="grid gap-4 md:grid-cols-3">
         {MILESTONES.map((m) => (
           <MilestoneCard key={m.age} milestone={m} birth={birth} />
         ))}
       </section>
 
-      {/* GUARDIÃO DA DISCIPLINA E RADAR */}
+      {/* NOVA SESSÃO: VISÃO DE FUTURO (A MATEMÁTICA DO LEGADO) */}
+      <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-background to-background">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Trees className="h-6 w-6 text-amber-500" /> A Matemática do Legado
+          </CardTitle>
+          <CardDescription>
+            Veja o que você está plantando hoje. Projeção realista com aportes base de <strong className="text-amber-500">{formatBRL(aporteMensalSugerido > 0 ? aporteMensalSugerido : 100)}/mês</strong> rendendo 0,8% a.m.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[5, 10, 20].map((anos) => {
+              const proj = calcularProjecaoLegado(anos);
+              return (
+                <div key={anos} className="rounded-xl border border-amber-500/10 bg-card p-5 space-y-3 relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/5 rounded-full blur-xl"></div>
+                  
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500/80">{anos} Anos</p>
+                    <span className="text-[10px] text-muted-foreground">{anos * 12} meses</span>
+                  </div>
+                  
+                  <div>
+                    <p className="text-[11px] text-muted-foreground mb-1">Patrimônio Acumulado</p>
+                    <p className="text-2xl font-bold text-foreground">{formatBRL(proj.patrimonio)}</p>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-[11px] text-muted-foreground mb-1">Renda Passiva Limpa</p>
+                    <p className="text-lg font-semibold text-emerald-400">~ {formatBRL(proj.rendaMensal)} / mês</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 md:grid-cols-2">
-        
-        {/* Card 1: Check-in de Aporte */}
         <Card className={`border-2 transition-colors ${aporteConfirmado === true ? 'border-emerald-500/30 bg-emerald-500/5' : aporteConfirmado === false ? 'border-red-500/30 bg-red-500/5' : 'border-border'}`}>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -683,7 +723,6 @@ function LemeDaVida({ userId, aporteMensalSugerido }: { userId: string, aporteMe
           </CardContent>
         </Card>
 
-        {/* Card 2: Radar de Ajuste de Rota (O cafezinho a menos) */}
         <Card className="border-primary/20 bg-gradient-to-br from-background to-card shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -921,7 +960,6 @@ function Ativos({ userId, aporteMensal, metaReservaAtingida }: { userId: string;
           )}
         </CardContent>
       </Card>
-      <LegadoProjection aporteMensal={aporteMensal} />
     </div>
   );
 }
@@ -964,38 +1002,5 @@ function AssetRow({ asset, aporteMensal, metaReservaAtingida, onRemove, onPct }:
       </div>
       {analysis && <p className="text-xs italic text-muted-foreground mt-1">{analysis.justificativa}</p>}
     </div>
-  );
-}
-
-function LegadoProjection({ aporteMensal }: { aporteMensal: number }) {
-  const [annualRate, setAnnualRate] = useState(10);
-  const [dividendYield, setDividendYield] = useState(6);
-
-  const project = (years: number) => {
-    const totalAnnualRate = (annualRate + dividendYield) / 100;
-    const r = totalAnnualRate / 12;
-    const n = years * 12;
-    if (r === 0) return { total: aporteMensal * n, aportado: aporteMensal * n };
-    const total = aporteMensal * ((Math.pow(1 + r, n) - 1) / r);
-    return { total, aportado: aporteMensal * n };
-  };
-
-  return (
-    <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card">
-      <CardHeader><CardTitle>Projeção Avalanche de Legado</CardTitle></CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[20, 30, 50].map((y) => {
-            const p = project(y);
-            return (
-              <div key={y} className="rounded-lg border border-border bg-background/40 p-4">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{y} anos</p>
-                <p className="text-2xl font-semibold text-primary mt-1">{formatBRL(p.total)}</p>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
