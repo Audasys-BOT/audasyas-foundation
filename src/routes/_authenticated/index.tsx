@@ -87,7 +87,6 @@ function OnboardingWizard({ userId, onComplete }: { userId: string, onComplete: 
 
   const finishOnboarding = () => {
     setIsProcessing(true);
-    // Simula o "Efeito UAU" da IA pensando
     setTimeout(() => {
       if (typeof window !== "undefined") {
         window.localStorage.setItem(`${BIRTH_KEY_BASE}:${userId}`, birth);
@@ -101,7 +100,6 @@ function OnboardingWizard({ userId, onComplete }: { userId: string, onComplete: 
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Decorativo */}
       <div className="absolute top-1/4 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -239,7 +237,6 @@ function SelectionCard({ title, selected, highlight, onClick }: { title: string;
 function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => void }) {
   const [activeTab, setActiveTab] = useState("financeiro");
   
-  // Carrega os dados iniciais gerados no Onboarding
   const [salario, setSalario] = useState("");
   const [custoManual, setCustoManual] = useState("");
   const [isEditingCusto, setIsEditingCusto] = useState(false);
@@ -430,7 +427,6 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                   </div>
                 </div>
 
-                {/* TRILHA GUIADA - BOTÃO DE AVANÇO */}
                 <div className="pt-6 border-t border-border/50 flex justify-end">
                   <Button onClick={() => setActiveTab("estrategista")} className="gap-2 h-11 px-6 bg-secondary text-secondary-foreground hover:bg-secondary/80">
                     Próximo Passo: Estrategista <ArrowRight className="h-4 w-4" />
@@ -459,7 +455,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
             <LemeDaVida userId={userId} aporteMensalSugerido={aporteSugeridoAtivos} onNext={() => setActiveTab("ativos")} />
           </TabsContent>
 
-          {/* ABA 4: ATIVOS (HOME BROKER) */}
+          {/* ABA 4: ATIVOS */}
           <TabsContent value="ativos" className="mt-0">
             <Ativos aporteMensal={aporteSugeridoAtivos} metaReservaAtingida={metaReservaAtingida} />
           </TabsContent>
@@ -485,7 +481,7 @@ function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: st
 }
 
 // ============================================================
-// ESTRATEGISTA (Com Botão Guiado)
+// ESTRATEGISTA
 // ============================================================
 function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaReservaAtingida, liveCapacity, userId, custoFixo, onNext }: { aporteSugerido: number; sugestaoReserva: number; reservaFaltante: number; metaReservaAtingida: boolean; liveCapacity: number; userId: string; custoFixo: number, onNext: () => void }) {
   const [valorManual, setValorManual] = useState("");
@@ -518,7 +514,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-      
       <Card className="border-primary/20 shadow-lg">
         <CardHeader className="bg-primary/5 pb-4 border-b border-border/50">
           <CardTitle className="flex items-center gap-2">
@@ -590,7 +585,7 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
 }
 
 // ============================================================
-// LEME DA VIDA (Com o Botão Guiado)
+// LEME DA VIDA (Com o Simulador Dinâmico e Ajuste Fino)
 // ============================================================
 type Milestone = { age: number; title: string; subtitle: string; description: string; icon: ReactNode; accent: string };
 const MILESTONES: Milestone[] = [
@@ -602,8 +597,13 @@ const MILESTONES: Milestone[] = [
 function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, aporteMensalSugerido: number, onNext: () => void }) {
   const [birth, setBirth] = useState<string>("");
   const [aporteConfirmado, setAporteConfirmado] = useState<boolean | null>(null);
+  
+  // Rendimento do Mês (O Retrovisor para cobrar disciplina)
   const [rendimentoReal, setRendimentoReal] = useState("0,80");
   
+  // Taxa Simulada (O Binóculo para ver o futuro mágico)
+  const [taxaSimulada, setTaxaSimulada] = useState("0,80");
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const b = window.localStorage.getItem(`${BIRTH_KEY_BASE}:${userId}`);
@@ -613,9 +613,12 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
 
   const calcularProjecaoLegado = (anos: number) => {
     const aporte = aporteMensalSugerido > 0 ? aporteMensalSugerido : 800; 
+    let taxaMes = parseNumber(taxaSimulada) / 100;
+    if (taxaMes <= 0) taxaMes = 0.0001; // Evita erro matemático de divisão por zero
+    
     const n = anos * 12;
-    const patrimonio = aporte * ((Math.pow(1 + 0.008, n) - 1) / 0.008);
-    return { patrimonio, renda: patrimonio * 0.008 };
+    const patrimonio = aporte * ((Math.pow(1 + taxaMes, n) - 1) / taxaMes);
+    return { patrimonio, renda: patrimonio * taxaMes };
   };
 
   return (
@@ -627,16 +630,36 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
         ))}
       </section>
 
+      {/* SESSÃO: A MATEMÁTICA DO LEGADO COM SIMULADOR */}
       <Card className="border-amber-500/20 shadow-xl overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
         <CardHeader className="bg-gradient-to-br from-amber-500/10 to-background pb-6">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Trees className="h-6 w-6 text-amber-500" /> O Que Você Está Plantando Hoje
-          </CardTitle>
-          <CardDescription>
-            Projeção real baseada em aportes disciplinados de <strong className="text-amber-500">{formatBRL(aporteMensalSugerido > 0 ? aporteMensalSugerido : 800)}/mês</strong>.
-          </CardDescription>
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Trees className="h-6 w-6 text-amber-500" /> A Matemática do Legado
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Altere a taxa abaixo e veja o impacto brutal dos juros no longo prazo com aportes de <strong className="text-amber-500">{formatBRL(aporteMensalSugerido > 0 ? aporteMensalSugerido : 800)}/mês</strong>.
+              </CardDescription>
+            </div>
+            
+            {/* O SIMULADOR INTERATIVO DE FUTURO */}
+            <div className="bg-background p-3 rounded-lg border border-amber-500/30 flex items-center gap-3 shadow-inner">
+              <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Simular Taxa (a.m.):</Label>
+              <div className="flex items-center gap-1">
+                <Input 
+                  inputMode="decimal" 
+                  value={taxaSimulada} 
+                  onChange={(e) => setTaxaSimulada(e.target.value)} 
+                  className="w-20 h-9 text-center font-black text-amber-500 border-amber-500/50 bg-amber-500/5" 
+                />
+                <span className="text-xs font-bold text-muted-foreground">%</span>
+              </div>
+            </div>
+          </div>
         </CardHeader>
+        
         <CardContent className="pt-2">
           <div className="grid gap-4 sm:grid-cols-3">
             {[5, 10, 20].map((anos) => {
@@ -648,11 +671,11 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
                   </div>
                   <div>
                     <p className="text-[11px] text-muted-foreground mb-1">Patrimônio Acumulado</p>
-                    <p className="text-2xl font-bold text-foreground">{formatBRL(proj.patrimonio)}</p>
+                    <p className="text-2xl font-bold text-foreground transition-all duration-300">{formatBRL(proj.patrimonio)}</p>
                   </div>
                   <div className="pt-3 border-t border-border/50">
                     <p className="text-[11px] text-muted-foreground mb-1">Sua Mesada Infinita</p>
-                    <p className="text-lg font-bold text-emerald-400">~ {formatBRL(proj.renda)} / mês</p>
+                    <p className="text-lg font-bold text-emerald-400 transition-all duration-300">~ {formatBRL(proj.renda)} / mês</p>
                   </div>
                 </div>
               );
@@ -692,7 +715,7 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
           </CardContent>
         </Card>
         
-        {/* Radar Encurtado Visualmente */}
+        {/* Radar Fixado na Meta (O Xerife) */}
         <Card className="border-primary/20 bg-gradient-to-br from-background to-card">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -708,7 +731,7 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
                </div>
                {parseNumber(rendimentoReal) < 0.8 ? (
                  <p className="text-xs text-amber-400 bg-amber-500/10 p-2 rounded border border-amber-500/20 leading-relaxed">
-                   <strong>Dica da IA:</strong> Adicione cerca de R$ 30,00 no seu aporte do mês que vem para cobrir essa leve variação de mercado e manter a projeção de 20 anos intacta.
+                   <strong>Dica da IA:</strong> Adicione cerca de R$ 30,00 no seu aporte do mês que vem para cobrir essa leve variação de mercado e manter a rota inabalável.
                  </p>
                ) : (
                  <p className="text-xs text-emerald-400 bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
@@ -774,12 +797,54 @@ function MilestoneCard({ milestone, birth }: { milestone: Milestone; birth: stri
 }
 
 // ============================================================
-// ATIVOS (Vitrine e Execução)
+// ATIVOS (Vitrine e Execução com a Lista Ouro Completa)
 // ============================================================
 const KITS_ALOCACAO = [
-  { id: 'alto', name: 'Kit Arrojado (Acelerador)', badge: 'Alto Risco', isMVP: false, assets: [{ t: 'PETR4', split: 30 }, { t: 'VALE3', split: 20 }, { t: 'URPR11', split: 50 }], info: 'Oscila fortemente. Exige coração forte.' },
-  { id: 'medio', name: 'Kit Expansão (Moderado)', badge: 'Risco Médio', isMVP: false, assets: [{ t: 'ITUB4', split: 30 }, { t: 'EGIE3', split: 20 }, { t: 'XPML11', split: 50 }], info: 'Boas empresas e shoppings. Oscila em crises.' },
-  { id: 'recomendado', name: 'Kit Legado (Ouro)', badge: 'Blindagem Total', isMVP: true, assets: [{ t: 'BBAS3', split: 25 }, { t: 'TAEE11', split: 25 }, { t: 'HGLG11', split: 25 }, { t: 'BTLG11', split: 25 }], info: 'A fundação de pedra. Bancos sólidos, contas de luz inadiáveis e galpões alugados por gigantes. Feito para dormir em paz.' }
+  { 
+    id: 'alto', 
+    name: 'Kit Arrojado (Acelerador)', 
+    badge: 'Alto Risco', 
+    isMVP: false, 
+    assets: [
+      { t: 'PETR4', split: 25 }, 
+      { t: 'VALE3', split: 25 }, 
+      { t: 'URPR11', split: 25 }, 
+      { t: 'HCTR11', split: 25 }
+    ], 
+    info: 'Oscila fortemente. Exige coração forte e aceitação de risco em troca de dividendos agressivos momentâneos.' 
+  },
+  { 
+    id: 'medio', 
+    name: 'Kit Expansão (Moderado)', 
+    badge: 'Risco Médio', 
+    isMVP: false, 
+    assets: [
+      { t: 'ITUB4', split: 20 }, 
+      { t: 'EGIE3', split: 20 }, 
+      { t: 'XPML11', split: 30 },
+      { t: 'VISC11', split: 30 }
+    ], 
+    info: 'Boas empresas e forte peso em shoppings. Oscila um pouco mais durante crises de consumo e alta de juros.' 
+  },
+  { 
+    id: 'recomendado', 
+    name: 'Kit Legado (Ouro)', 
+    badge: 'Blindagem Total', 
+    isMVP: true, 
+    assets: [
+      { t: 'BBAS3', split: 10 }, 
+      { t: 'ITUB4', split: 10 }, 
+      { t: 'TAEE11', split: 10 }, 
+      { t: 'EGIE3', split: 10 },
+      { t: 'BBSE3', split: 10 },
+      { t: 'HGLG11', split: 10 }, 
+      { t: 'BTLG11', split: 10 },
+      { t: 'XPML11', split: 10 },
+      { t: 'VISC11', split: 10 },
+      { t: 'KNCR11', split: 10 }
+    ], 
+    info: 'A fundação de pedra. Diversificação impecável em Bancos, Energia, Seguros, Logística e Shoppings. Risco totalmente diluído para dormir em paz.' 
+  }
 ];
 
 function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; metaReservaAtingida: boolean }) {
