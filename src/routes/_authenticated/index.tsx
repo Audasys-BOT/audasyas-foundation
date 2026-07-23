@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check } from "lucide-react";
+import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, Search, ThumbsUp, ThumbsDown, BarChart3, ChevronUp, ChevronDown, PieChart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -61,13 +61,10 @@ function OnboardingWizard({ userId, onComplete }: { userId: string, onComplete: 
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Step 1
   const [birth, setBirth] = useState("");
-  // Step 2
   const [salario, setSalario] = useState("");
   const [custo, setCusto] = useState("");
   const [reserva, setReserva] = useState("");
-  // Step 3
   const [horizon, setHorizon] = useState("");
   const [family, setFamily] = useState("");
   const [risk, setRisk] = useState("");
@@ -130,7 +127,6 @@ function OnboardingWizard({ userId, onComplete }: { userId: string, onComplete: 
             </CardHeader>
             <CardContent className="pt-8 px-6 sm:px-12 pb-10">
               
-              {/* PASSO 1: TEMPO */}
               {step === 1 && (
                 <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
                   <div className="text-center space-y-2">
@@ -144,7 +140,6 @@ function OnboardingWizard({ userId, onComplete }: { userId: string, onComplete: 
                 </div>
               )}
 
-              {/* PASSO 2: FINANCEIRO */}
               {step === 2 && (
                 <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
                   <div className="text-center space-y-2">
@@ -173,7 +168,6 @@ function OnboardingWizard({ userId, onComplete }: { userId: string, onComplete: 
                 </div>
               )}
 
-              {/* PASSO 3: PROPÓSITO */}
               {step === 3 && (
                 <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
                   <div className="text-center space-y-2">
@@ -235,7 +229,8 @@ function SelectionCard({ title, selected, highlight, onClick }: { title: string;
 // O DASHBOARD PRINCIPAL (PAINEL APÓS ONBOARDING)
 // ============================================================
 function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => void }) {
-  const [activeTab, setActiveTab] = useState("financeiro");
+  // A aba Carteira agora é a padrão (A porta de entrada do dia a dia)
+  const [activeTab, setActiveTab] = useState("carteira");
   
   const [salario, setSalario] = useState("");
   const [custoManual, setCustoManual] = useState("");
@@ -311,7 +306,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
             <h1 className="text-xl font-bold tracking-tight">
               <span className="text-primary">AudasYAs</span> Invest
             </h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Painel de Governança</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Wealth Management</p>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -323,162 +318,305 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
       </header>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full sm:w-auto grid-cols-2 md:grid-cols-4 gap-2 bg-transparent">
-            <TabsTrigger value="financeiro" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
-              <Wallet className="h-4 w-4" /> Controle
-            </TabsTrigger>
-            <TabsTrigger value="estrategista" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
-              <Target className="h-4 w-4" /> Estrategista
-            </TabsTrigger>
-            <TabsTrigger value="leme" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
-              <Compass className="h-4 w-4" /> Leme da Vida
-            </TabsTrigger>
-            <TabsTrigger value="ativos" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
-              <LineChart className="h-4 w-4" /> Ativos
-            </TabsTrigger>
-          </TabsList>
+        {/* NAVEGAÇÃO UNIFICADA E RESPONSIVA (SCROLL HORIZONTAL NO MOBILE) */}
+        <div className="w-full overflow-x-auto pb-2 scrollbar-hide">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="min-w-max">
+            <TabsList className="flex gap-2 bg-transparent">
+              <TabsTrigger value="carteira" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+                <PieChart className="h-4 w-4" /> Minha Carteira
+              </TabsTrigger>
+              <TabsTrigger value="ativos" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+                <Search className="h-4 w-4" /> Radar & Compras
+              </TabsTrigger>
+              <TabsTrigger value="leme" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+                <Compass className="h-4 w-4" /> Leme da Vida
+              </TabsTrigger>
+              <TabsTrigger value="estrategista" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+                <Target className="h-4 w-4" /> Estrategista
+              </TabsTrigger>
+              <TabsTrigger value="financeiro" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+                <ShieldCheck className="h-4 w-4" /> Proteção (Reserva)
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* NOVIDADE: ABA MINHA CARTEIRA */}
+            <TabsContent value="carteira" className="mt-6 animate-in fade-in zoom-in-95 duration-500">
+              <MinhaCarteira />
+            </TabsContent>
 
-          {/* ABA 1: CONTROLE FINANCEIRO */}
-          <TabsContent value="financeiro" className="space-y-8 mt-0 animate-in fade-in zoom-in-95 duration-500">
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard icon={<Wallet className="h-4 w-4" />} label="Salário Mensal" value={formatBRL(salarioNum)} />
-              <KpiCard icon={<ArrowDownRight className="h-4 w-4" />} label="Custo de Vida Fixo" value={formatBRL(custoFinal)} />
-              <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Disponível para Ativos" value={formatBRL(aporteSugeridoAtivos)} highlight />
-              <KpiCard icon={<PiggyBank className="h-4 w-4" />} label="Reserva Acumulada" value={formatBRL(reservaAcumulada)} />
-            </section>
+            {/* ABA ATIVOS (ATUALIZADA COM O SCANNER DA IA) */}
+            <TabsContent value="ativos" className="mt-6">
+              <Ativos aporteMensal={aporteSugeridoAtivos} metaReservaAtingida={metaReservaAtingida} />
+            </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Estrutura da Reserva (Seu Escudo)</CardTitle>
-                <CardDescription>Edite a sua realidade financeira abaixo caso algo tenha mudado neste mês.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                
-                <div className="grid gap-6 sm:grid-cols-2 p-4 bg-muted/30 rounded-xl border border-border">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase text-muted-foreground">Salário Mensal Atual</Label>
-                    <Input inputMode="decimal" value={salario} onChange={(e) => setSalario(e.target.value)} className="bg-background" />
+            {/* ABA LEME DA VIDA */}
+            <TabsContent value="leme" className="mt-6">
+              <LemeDaVida userId={userId} aporteMensalSugerido={aporteSugeridoAtivos} onNext={() => setActiveTab("ativos")} />
+            </TabsContent>
+
+            {/* ABA ESTRATEGISTA */}
+            <TabsContent value="estrategista" className="mt-6">
+              <Estrategista
+                userId={userId}
+                aporteSugerido={aporteSugeridoAtivos}
+                sugestaoReserva={sugestaoReservaMes}
+                reservaFaltante={reservaFaltanteTotal}
+                metaReservaAtingida={metaReservaAtingida}
+                liveCapacity={liveCapacity}
+                custoFixo={custoFinal}
+                onNext={() => setActiveTab("leme")}
+              />
+            </TabsContent>
+
+            {/* ABA CONTROLE FINANCEIRO (MOVIMENTO DA RESERVA) */}
+            <TabsContent value="financeiro" className="space-y-8 mt-6 animate-in fade-in zoom-in-95 duration-500">
+              <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <KpiCard icon={<Wallet className="h-4 w-4" />} label="Salário Mensal" value={formatBRL(salarioNum)} />
+                <KpiCard icon={<ArrowDownRight className="h-4 w-4" />} label="Custo de Vida Fixo" value={formatBRL(custoFinal)} />
+                <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Poder de Fogo Livre" value={formatBRL(aporteSugeridoAtivos)} highlight />
+                <KpiCard icon={<PiggyBank className="h-4 w-4" />} label="Reserva Acumulada" value={formatBRL(reservaAcumulada)} />
+              </section>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Estrutura da Reserva (Seu Escudo)</CardTitle>
+                  <CardDescription>Acompanhe e reforce o escudo financeiro da sua família.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  
+                  <div className="grid gap-6 sm:grid-cols-2 p-4 bg-muted/30 rounded-xl border border-border">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase text-muted-foreground">Salário Mensal Atual</Label>
+                      <Input inputMode="decimal" value={salario} onChange={(e) => setSalario(e.target.value)} className="bg-background" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs uppercase text-muted-foreground">Custo de Vida Fixo</Label>
+                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setIsEditingCusto(!isEditingCusto); if(!isEditingCusto) setCustoManual(custoFinal.toString()); }}>
+                          <Pencil className={`h-3 w-3 ${isEditingCusto ? "text-primary" : "text-muted-foreground"}`} />
+                        </Button>
+                      </div>
+                      <Input inputMode="decimal" value={isEditingCusto ? custoManual : custoIdeal.toFixed(2)} onChange={(e) => setCustoManual(e.target.value)} disabled={!isEditingCusto} className="bg-background" />
+                      <p className={`text-[10px] font-medium ${percentualCusto > 60 ? "text-amber-400" : "text-emerald-400"}`}>
+                        {isEditingCusto ? `Consome ${percentualCusto.toFixed(0)}%` : `Otimizado pela IA (60%)`}
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs uppercase text-muted-foreground">Custo de Vida Fixo</Label>
-                      <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setIsEditingCusto(!isEditingCusto); if(!isEditingCusto) setCustoManual(custoFinal.toString()); }}>
-                        <Pencil className={`h-3 w-3 ${isEditingCusto ? "text-primary" : "text-muted-foreground"}`} />
+
+                  <div className="space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold flex items-center gap-2">
+                          Escudo Familiar <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">{rankAtual}</span>
+                        </h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Teto de 6 meses de segurança: <span className="text-foreground font-semibold">{formatBRL(tetoFinal)}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="w-full bg-muted rounded-full h-4 overflow-hidden relative border border-border">
+                        <div className="bg-gradient-to-r from-primary/80 to-primary h-full transition-all duration-500" style={{ width: `${pctProgressoReserva}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[11px] font-medium text-muted-foreground px-0.5">
+                        <span>{pctProgressoReserva.toFixed(1)}% Blindado</span>
+                        {pctProgressoReserva < 100 ? (
+                          <span>Próximo alvo: Mais {formatBRL(faltamParaProximo)} p/ {proximoRank}</span>
+                        ) : (
+                          <span className="text-emerald-400">100% Protegido</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className={`p-4 rounded-xl border flex gap-3 ${metaReservaAtingida ? "bg-emerald-500/5 border-emerald-500/20" : isProntidaoSegura ? "bg-sky-500/5 border-sky-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
+                      {metaReservaAtingida ? <ShieldCheck className="h-6 w-6 text-emerald-400 shrink-0" /> : isProntidaoSegura ? <TrendingUp className="h-6 w-6 text-sky-400 shrink-0" /> : <ShieldAlert className="h-6 w-6 text-amber-400 shrink-0" />}
+                      <div>
+                        <h5 className="font-bold text-sm text-foreground">
+                          {metaReservaAtingida ? "Reserva Concluída. Liberado para Ativos!" : isProntidaoSegura ? "Avanço para Camada de Resiliência" : "Construindo Prontidão (Curto Prazo)"}
+                        </h5>
+                        <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                          {metaReservaAtingida 
+                            ? "Missão cumprida! Todo o seu fluxo mensal agora pode ser direcionado para a criação de patrimônio na Bolsa de Valores." 
+                            : !isProntidaoSegura
+                            ? `Use um CDB 100% CDI de liquidez diária do seu banco. Faltam R$ ${formatBRL(Math.max(0, 2000 - reservaAcumulada))} para desbloquearmos instrumentos isentos de Imposto de Renda.`
+                            : `Sua base de giro está pronta. Os próximos R$ ${formatBRL(sugestaoReservaMes)} podem ser investidos em LCI/LCA com carência (Isentos de IR).`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row items-end gap-4 shadow-sm">
+                      <div className="space-y-2 w-full sm:w-auto flex-1">
+                        <Label className="text-xs">Fiz um aporte na Reserva (R$)</Label>
+                        <Input inputMode="decimal" value={valorAjusteReserva} onChange={(e) => setValorAjusteReserva(e.target.value)} placeholder="Valor blindado este mês" />
+                      </div>
+                      <Button type="button" className="w-full sm:w-auto gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10" onClick={handleGuardarReserva}>
+                        <Check className="h-4 w-4" /> Registrar 
                       </Button>
                     </div>
-                    <Input inputMode="decimal" value={isEditingCusto ? custoManual : custoIdeal.toFixed(2)} onChange={(e) => setCustoManual(e.target.value)} disabled={!isEditingCusto} className="bg-background" />
-                    <p className={`text-[10px] font-medium ${percentualCusto > 60 ? "text-amber-400" : "text-emerald-400"}`}>
-                      {isEditingCusto ? `Consome ${percentualCusto.toFixed(0)}%` : `Otimizado pela IA (60%)`}
-                    </p>
                   </div>
-                </div>
-
-                <div className="space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-                    <div>
-                      <h4 className="font-bold flex items-center gap-2">
-                        Escudo Familiar <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">{rankAtual}</span>
-                      </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Teto de 6 meses de segurança: <span className="text-foreground font-semibold">{formatBRL(tetoFinal)}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="w-full bg-muted rounded-full h-4 overflow-hidden relative border border-border">
-                      <div className="bg-gradient-to-r from-primary/80 to-primary h-full transition-all duration-500" style={{ width: `${pctProgressoReserva}%` }} />
-                    </div>
-                    <div className="flex justify-between text-[11px] font-medium text-muted-foreground px-0.5">
-                      <span>{pctProgressoReserva.toFixed(1)}% Blindado</span>
-                      {pctProgressoReserva < 100 ? (
-                        <span>Próximo alvo: Mais {formatBRL(faltamParaProximo)} p/ {proximoRank}</span>
-                      ) : (
-                        <span className="text-emerald-400">100% Protegido</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className={`p-4 rounded-xl border flex gap-3 ${metaReservaAtingida ? "bg-emerald-500/5 border-emerald-500/20" : isProntidaoSegura ? "bg-sky-500/5 border-sky-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
-                    {metaReservaAtingida ? <ShieldCheck className="h-6 w-6 text-emerald-400 shrink-0" /> : isProntidaoSegura ? <TrendingUp className="h-6 w-6 text-sky-400 shrink-0" /> : <ShieldAlert className="h-6 w-6 text-amber-400 shrink-0" />}
-                    <div>
-                      <h5 className="font-bold text-sm text-foreground">
-                        {metaReservaAtingida ? "Reserva Concluída. Liberado para Ativos!" : isProntidaoSegura ? "Avanço para Camada de Resiliência" : "Construindo Prontidão (Curto Prazo)"}
-                      </h5>
-                      <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                        {metaReservaAtingida 
-                          ? "Missão cumprida! Todo o seu fluxo mensal agora pode ser direcionado para a criação de patrimônio na Bolsa de Valores." 
-                          : !isProntidaoSegura
-                          ? `Use um CDB 100% CDI de liquidez diária do seu banco. Faltam R$ ${formatBRL(Math.max(0, 2000 - reservaAcumulada))} para desbloquearmos instrumentos isentos de Imposto de Renda.`
-                          : `Sua base de giro está pronta. Os próximos R$ ${formatBRL(sugestaoReservaMes)} podem ser investidos em LCI/LCA com carência (Isentos de IR).`}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row items-end gap-4 shadow-sm">
-                    <div className="space-y-2 w-full sm:w-auto flex-1">
-                      <Label className="text-xs">Fiz um aporte na Reserva (R$)</Label>
-                      <Input inputMode="decimal" value={valorAjusteReserva} onChange={(e) => setValorAjusteReserva(e.target.value)} placeholder="Valor blindado este mês" />
-                    </div>
-                    <Button type="button" className="w-full sm:w-auto gap-2 bg-primary text-primary-foreground hover:bg-primary/90 h-10" onClick={handleGuardarReserva}>
-                      <Check className="h-4 w-4" /> Registrar 
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-border/50 flex justify-end">
-                  <Button onClick={() => setActiveTab("estrategista")} className="gap-2 h-11 px-6 bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                    Próximo Passo: Estrategista <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ABA 2: ESTRATEGISTA */}
-          <TabsContent value="estrategista" className="mt-0">
-            <Estrategista
-              userId={userId}
-              aporteSugerido={aporteSugeridoAtivos}
-              sugestaoReserva={sugestaoReservaMes}
-              reservaFaltante={reservaFaltanteTotal}
-              metaReservaAtingida={metaReservaAtingida}
-              liveCapacity={liveCapacity}
-              custoFixo={custoFinal}
-              onNext={() => setActiveTab("leme")}
-            />
-          </TabsContent>
-
-          {/* ABA 3: LEME DA VIDA */}
-          <TabsContent value="leme" className="mt-0">
-            <LemeDaVida userId={userId} aporteMensalSugerido={aporteSugeridoAtivos} onNext={() => setActiveTab("ativos")} />
-          </TabsContent>
-
-          {/* ABA 4: ATIVOS */}
-          <TabsContent value="ativos" className="mt-0">
-            <Ativos aporteMensal={aporteSugeridoAtivos} metaReservaAtingida={metaReservaAtingida} />
-          </TabsContent>
-        </Tabs>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </main>
     </div>
   );
 }
 
-function KpiCard({ icon, label, value, highlight }: { icon: ReactNode; label: string; value: string; highlight?: boolean }) {
+function KpiCard({ icon, label, value, highlight, variation }: { icon: ReactNode; label: string; value: string; highlight?: boolean, variation?: string }) {
   return (
     <Card className={`border-l-4 ${highlight ? "border-l-primary bg-primary/5 border-y-primary/20 border-r-primary/20" : "border-l-muted-foreground/30"}`}>
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-semibold mb-3">
-          {icon} <span>{label}</span>
+      <CardContent className="p-4 sm:p-5 relative">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-semibold">
+            {icon} <span>{label}</span>
+          </div>
+          {variation && (
+            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center ${variation.includes('+') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+              {variation.includes('+') ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              {variation.replace('+', '').replace('-', '')}
+            </div>
+          )}
         </div>
-        <p className={`text-2xl sm:text-3xl font-black tabular-nums tracking-tight ${highlight ? "text-primary" : "text-foreground"}`}>
+        <p className={`text-2xl font-black tabular-nums tracking-tight ${highlight ? "text-primary" : "text-foreground"}`}>
           {value}
         </p>
       </CardContent>
     </Card>
   );
 }
+
+
+// ============================================================
+// NOVIDADE: ABA MINHA CARTEIRA (VISÃO REAL DA RIQUEZA)
+// ============================================================
+function MinhaCarteira() {
+  // Mock de dados da carteira do usuário (Em produção virá do Supabase)
+  const mockPatrimonio = 14250.00;
+  const mockInvestido = 13500.00;
+  const mockRentabilidade = "+5.55%";
+  const mockProventos = 325.40;
+
+  // Mock Chuva de Dividendos (Gráfico de Barras)
+  const dividendosHistory = [
+    { mes: 'Jan', val: 12.50 },
+    { mes: 'Fev', val: 18.00 },
+    { mes: 'Mar', val: 24.30 },
+    { mes: 'Abr', val: 42.00 },
+    { mes: 'Mai', val: 65.10 },
+    { mes: 'Jun', val: 78.50 },
+    { mes: 'Jul', val: 85.00 },
+  ];
+  const maxDiv = Math.max(...dividendosHistory.map(d => d.val));
+
+  const mockAtivos = [
+    { ticker: 'TAEE11', tipo: 'Ação', qtd: 50, pm: 34.50, atual: 36.20, total: 1810.00, rent: '+4.9%' },
+    { ticker: 'BBAS3', tipo: 'Ação', qtd: 40, pm: 25.00, atual: 28.10, total: 1124.00, rent: '+12.4%' },
+    { ticker: 'HGLG11', tipo: 'FII', qtd: 20, pm: 158.00, atual: 162.00, total: 3240.00, rent: '+2.5%' },
+    { ticker: 'XPML11', tipo: 'FII', qtd: 35, pm: 112.00, atual: 115.50, total: 4042.50, rent: '+3.1%' },
+    { ticker: 'KNCR11', tipo: 'FII', qtd: 40, pm: 101.50, atual: 100.80, total: 4032.00, rent: '-0.6%' },
+  ];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Seu Legado Real</h2>
+          <p className="text-sm text-muted-foreground">Acompanhamento consolidado da sua carteira de investimentos.</p>
+        </div>
+        <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => toast.success("Módulo de lançamento manual em breve.")}>
+          <Plus className="h-4 w-4" /> Registrar Compra
+        </Button>
+      </div>
+
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard icon={<Briefcase className="h-4 w-4" />} label="Patrimônio Total" value={formatBRL(mockPatrimonio)} />
+        <KpiCard icon={<Wallet className="h-4 w-4" />} label="Total Investido" value={formatBRL(mockInvestido)} />
+        <KpiCard icon={<Activity className="h-4 w-4" />} label="Rentabilidade" value={mockRentabilidade} variation={mockRentabilidade} />
+        <KpiCard icon={<Droplets className="h-4 w-4 text-emerald-500" />} label="Proventos Acumulados" value={formatBRL(mockProventos)} highlight />
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* GRÁFICO CHUVA DE DIVIDENDOS */}
+        <Card className="lg:col-span-1 border-primary/20 bg-gradient-to-t from-background to-card shadow-lg">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Droplets className="h-5 w-5 text-emerald-400" /> A Chuva de Dividendos
+            </CardTitle>
+            <CardDescription>Sua renda passiva crescendo mês a mês.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mt-8 flex items-end justify-between h-48 gap-2 border-b border-border/50 pb-2 relative">
+              {/* Linha guia de Marco */}
+              <div className="absolute top-1/2 w-full border-t border-dashed border-emerald-500/20 z-0"></div>
+              <span className="absolute top-1/2 -mt-4 right-0 text-[9px] text-emerald-500/50 bg-background px-1">Marco 1 (Conta de Luz)</span>
+
+              {dividendosHistory.map((item, index) => {
+                const heightPct = Math.max(5, (item.val / maxDiv) * 100);
+                return (
+                  <div key={index} className="flex flex-col items-center flex-1 z-10 group relative">
+                    <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-card border border-border text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                      {formatBRL(item.val)}
+                    </div>
+                    <div 
+                      className="w-full bg-gradient-to-t from-emerald-600/80 to-emerald-400/80 rounded-t-sm hover:brightness-125 transition-all cursor-pointer"
+                      style={{ height: `${heightPct}%` }}
+                    />
+                    <span className="text-[10px] text-muted-foreground mt-2 uppercase">{item.mes}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-center text-muted-foreground mt-4 italic">
+              "A oitava maravilha do mundo em ação."
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* TABELA DE ATIVOS */}
+        <Card className="lg:col-span-2 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Custódia (Seus Ativos Atuais)</CardTitle>
+            <CardDescription>O que já foi comprado e está na sua corretora rendendo.</CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground text-xs uppercase tracking-wider">
+                  <th className="pb-3 font-medium">Ativo</th>
+                  <th className="pb-3 font-medium text-center">Tipo</th>
+                  <th className="pb-3 font-medium text-right">Qtd</th>
+                  <th className="pb-3 font-medium text-right">Preço Médio</th>
+                  <th className="pb-3 font-medium text-right">Cotação</th>
+                  <th className="pb-3 font-medium text-right">Valor Total</th>
+                  <th className="pb-3 font-medium text-right">Rent.</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {mockAtivos.map((ativo, i) => (
+                  <tr key={i} className="hover:bg-muted/30 transition-colors">
+                    <td className="py-3 font-bold text-foreground">{ativo.ticker}</td>
+                    <td className="py-3 text-center"><span className="text-[10px] bg-muted px-2 py-1 rounded">{ativo.tipo}</span></td>
+                    <td className="py-3 text-right">{ativo.qtd}</td>
+                    <td className="py-3 text-right text-muted-foreground">{formatBRL(ativo.pm)}</td>
+                    <td className="py-3 text-right font-medium">{formatBRL(ativo.atual)}</td>
+                    <td className="py-3 text-right font-bold text-primary">{formatBRL(ativo.total)}</td>
+                    <td className={`py-3 text-right font-bold ${ativo.rent.includes('-') ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {ativo.rent}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 
 // ============================================================
 // ESTRATEGISTA
@@ -572,12 +710,6 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
               </div>
             </div>
           </div>
-
-          <div className="pt-6 border-t border-border/50 flex justify-end">
-            <Button onClick={onNext} className="gap-2 h-11 px-6 bg-secondary text-secondary-foreground hover:bg-secondary/80">
-              Próximo Passo: Leme da Vida <ArrowRight className="h-4 w-4" />
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
@@ -597,11 +729,7 @@ const MILESTONES: Milestone[] = [
 function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, aporteMensalSugerido: number, onNext: () => void }) {
   const [birth, setBirth] = useState<string>("");
   const [aporteConfirmado, setAporteConfirmado] = useState<boolean | null>(null);
-  
-  // Rendimento do Mês (O Retrovisor para cobrar disciplina)
   const [rendimentoReal, setRendimentoReal] = useState("0,80");
-  
-  // Taxa Simulada (O Binóculo para ver o futuro mágico)
   const [taxaSimulada, setTaxaSimulada] = useState("0,80");
 
   useEffect(() => {
@@ -614,7 +742,7 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
   const calcularProjecaoLegado = (anos: number) => {
     const aporte = aporteMensalSugerido > 0 ? aporteMensalSugerido : 800; 
     let taxaMes = parseNumber(taxaSimulada) / 100;
-    if (taxaMes <= 0) taxaMes = 0.0001; // Evita erro matemático de divisão por zero
+    if (taxaMes <= 0) taxaMes = 0.0001; 
     
     const n = anos * 12;
     const patrimonio = aporte * ((Math.pow(1 + taxaMes, n) - 1) / taxaMes);
@@ -630,7 +758,6 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
         ))}
       </section>
 
-      {/* SESSÃO: A MATEMÁTICA DO LEGADO COM SIMULADOR */}
       <Card className="border-amber-500/20 shadow-xl overflow-hidden relative">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50"></div>
         <CardHeader className="bg-gradient-to-br from-amber-500/10 to-background pb-6">
@@ -644,7 +771,6 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
               </CardDescription>
             </div>
             
-            {/* O SIMULADOR INTERATIVO DE FUTURO */}
             <div className="bg-background p-3 rounded-lg border border-amber-500/30 flex items-center gap-3 shadow-inner">
               <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Simular Taxa (a.m.):</Label>
               <div className="flex items-center gap-1">
@@ -715,7 +841,6 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
           </CardContent>
         </Card>
         
-        {/* Radar Fixado na Meta (O Xerife) */}
         <Card className="border-primary/20 bg-gradient-to-br from-background to-card">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -741,12 +866,6 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
              </div>
           </CardContent>
         </Card>
-      </div>
-
-      <div className="pt-4 flex justify-end">
-        <Button onClick={onNext} className="gap-2 h-11 px-6 bg-primary text-primary-foreground">
-          Passo Final: Comprar Ativos <ArrowRight className="h-4 w-4" />
-        </Button>
       </div>
     </div>
   );
@@ -797,7 +916,7 @@ function MilestoneCard({ milestone, birth }: { milestone: Milestone; birth: stri
 }
 
 // ============================================================
-// ATIVOS (Vitrine e Execução com a Lista Ouro Completa)
+// ATIVOS E SCANNER DA IA (NOVIDADE: RAIO-X AVULSO)
 // ============================================================
 const KITS_ALOCACAO = [
   { 
@@ -805,12 +924,7 @@ const KITS_ALOCACAO = [
     name: 'Kit Arrojado (Acelerador)', 
     badge: 'Alto Risco', 
     isMVP: false, 
-    assets: [
-      { t: 'PETR4', split: 25 }, 
-      { t: 'VALE3', split: 25 }, 
-      { t: 'URPR11', split: 25 }, 
-      { t: 'HCTR11', split: 25 }
-    ], 
+    assets: [{ t: 'PETR4', split: 25 }, { t: 'VALE3', split: 25 }, { t: 'URPR11', split: 25 }, { t: 'HCTR11', split: 25 }], 
     info: 'Oscila fortemente. Exige coração forte e aceitação de risco em troca de dividendos agressivos momentâneos.' 
   },
   { 
@@ -818,12 +932,7 @@ const KITS_ALOCACAO = [
     name: 'Kit Expansão (Moderado)', 
     badge: 'Risco Médio', 
     isMVP: false, 
-    assets: [
-      { t: 'ITUB4', split: 20 }, 
-      { t: 'EGIE3', split: 20 }, 
-      { t: 'XPML11', split: 30 },
-      { t: 'VISC11', split: 30 }
-    ], 
+    assets: [{ t: 'ITUB4', split: 20 }, { t: 'EGIE3', split: 20 }, { t: 'XPML11', split: 30 }, { t: 'VISC11', split: 30 }], 
     info: 'Boas empresas e forte peso em shoppings. Oscila um pouco mais durante crises de consumo e alta de juros.' 
   },
   { 
@@ -832,16 +941,8 @@ const KITS_ALOCACAO = [
     badge: 'Blindagem Total', 
     isMVP: true, 
     assets: [
-      { t: 'BBAS3', split: 10 }, 
-      { t: 'ITUB4', split: 10 }, 
-      { t: 'TAEE11', split: 10 }, 
-      { t: 'EGIE3', split: 10 },
-      { t: 'BBSE3', split: 10 },
-      { t: 'HGLG11', split: 10 }, 
-      { t: 'BTLG11', split: 10 },
-      { t: 'XPML11', split: 10 },
-      { t: 'VISC11', split: 10 },
-      { t: 'KNCR11', split: 10 }
+      { t: 'BBAS3', split: 10 }, { t: 'ITUB4', split: 10 }, { t: 'TAEE11', split: 10 }, { t: 'EGIE3', split: 10 }, { t: 'BBSE3', split: 10 },
+      { t: 'HGLG11', split: 10 }, { t: 'BTLG11', split: 10 }, { t: 'XPML11', split: 10 }, { t: 'VISC11', split: 10 }, { t: 'KNCR11', split: 10 }
     ], 
     info: 'A fundação de pedra. Diversificação impecável em Bancos, Energia, Seguros, Logística e Shoppings. Risco totalmente diluído para dormir em paz.' 
   }
@@ -851,70 +952,167 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
   const [selectedKit, setSelectedKit] = useState<string | null>(null);
   const aporte = aporteMensal > 0 ? aporteMensal : 800;
 
-  return (
-    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-      <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
-        <h2 className="text-2xl font-bold">O Balcão de Negócios</h2>
-        <p className="text-muted-foreground text-sm">Não precisa entender gráficos. Escolha a sua trilha e o sistema desenha a ordem exata para sua corretora.</p>
-      </div>
+  // Lógica do Scanner de Raio-X
+  const [searchTicker, setSearchTicker] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<any>(null);
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {KITS_ALOCACAO.map(kit => (
-          <Card key={kit.id} className={`flex flex-col border-2 transition-all ${kit.isMVP ? 'border-amber-500/40 shadow-xl shadow-amber-500/5 bg-amber-500/5' : 'border-border bg-card'}`}>
-            <CardHeader className="pb-3 border-b border-border/50">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] uppercase font-bold text-muted-foreground">{kit.badge}</span>
-                {kit.isMVP && <Crown className="h-4 w-4 text-amber-500" />}
-              </div>
-              <CardTitle className={`text-lg ${kit.isMVP ? 'text-amber-500' : 'text-foreground'}`}>{kit.name}</CardTitle>
+  const handleScan = () => {
+    if (!searchTicker) return toast.error("Digite o código do ativo.");
+    setIsScanning(true);
+    setScanResult(null);
+
+    setTimeout(() => {
+      const t = searchTicker.toUpperCase().trim();
+      let result;
+
+      // Mock da "Inteligência"
+      if (t === 'MGLU3' || t === 'OIBR3') {
+        result = { ticker: t, name: 'Varejo de Alto Risco', status: 'danger', icon: <ShieldAlert className="h-6 w-6 text-red-500" />, verdict: 'Reprovado pelo seu Perfil de Legado Seguro.', pros: ['Pode ter altas repentinas de preço se os juros do país caírem.'], cons: ['Setor extremamente frágil.', 'Margens de lucro baixíssimas.', 'Não paga dividendos consistentes.'], color: 'red' };
+      } else if (t === 'PETR4' || t === 'VALE3') {
+        result = { ticker: t, name: 'Commodity Global', status: 'warning', icon: <AlertTriangle className="h-6 w-6 text-amber-500" />, verdict: 'Atenção. Paga bons dividendos, mas vive de ciclos de alta e baixa extrema.', pros: ['Empresa gigante global.', 'Paga dividendos altíssimos em ciclos de alta.'], cons: ['Depende do preço do petróleo/minério (fatores externos).', 'Forte interferência política.'], color: 'amber' };
+      } else if (t === 'TAEE11' || t === 'BBAS3' || t === 'HGLG11') {
+        result = { ticker: t, name: 'Ativo Padrão Ouro', status: 'success', icon: <ShieldCheck className="h-6 w-6 text-emerald-500" />, verdict: 'Aprovado! Excelente para construção de Renda Passiva Familiar.', pros: ['Lucros constantes em qualquer cenário econômico.', 'Histórico impecável de pagamento de dividendos.', 'Setor perene (sempre haverá demanda).'], cons: ['Preço da cota demora a subir explosivamente (crescimento lento e seguro).'], color: 'emerald' };
+      } else {
+        result = { ticker: t, name: 'Ativo Genérico', status: 'warning', icon: <Search className="h-6 w-6 text-sky-500" />, verdict: 'Ativo fora da Lista Ouro do sistema. Cautela.', pros: ['Pode compor uma parcela pequena de uma carteira diversificada.'], cons: ['Não possui o longo histórico exigido pela IA para formar o pilar de um Legado.'], color: 'sky' };
+      }
+      setScanResult(result);
+      setIsScanning(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="space-y-12 animate-in fade-in zoom-in-95 duration-500 pb-10">
+      
+      {/* SEÇÃO 1: A VITRINE DE COMPRAS */}
+      <div>
+        <div className="mb-6 space-y-2">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Briefcase className="h-6 w-6 text-primary" /> O Balcão de Negócios (Sua Ordem de Compra)
+          </h2>
+          <p className="text-muted-foreground text-sm">A rota segura mastigada pela IA. Clique no Kit desejado para gerar a lista de compra da corretora.</p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
+          {KITS_ALOCACAO.map(kit => (
+            <Card key={kit.id} className={`flex flex-col border-2 transition-all ${kit.isMVP ? 'border-amber-500/40 shadow-xl shadow-amber-500/5 bg-amber-500/5' : 'border-border bg-card'}`}>
+              <CardHeader className="pb-3 border-b border-border/50">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[9px] uppercase font-bold text-muted-foreground">{kit.badge}</span>
+                  {kit.isMVP && <Crown className="h-4 w-4 text-amber-500" />}
+                </div>
+                <CardTitle className={`text-lg ${kit.isMVP ? 'text-amber-500' : 'text-foreground'}`}>{kit.name}</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-4 flex flex-col flex-1">
+                <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{kit.info}</p>
+                <Button 
+                  onClick={() => { setSelectedKit(kit.id); toast.success("Ordem de execução gerada abaixo!"); }}
+                  variant={selectedKit === kit.id ? 'secondary' : 'default'}
+                  className={`w-full ${kit.isMVP && selectedKit !== kit.id ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}`}
+                >
+                  {selectedKit === kit.id ? 'Selecionado' : 'Usar esta Estratégia'}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {selectedKit && (
+          <Card className="border-primary/40 bg-card mt-8 animate-in slide-in-from-bottom-4 shadow-2xl">
+            <CardHeader className="bg-primary/5 pb-4">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Activity className="h-6 w-6 text-primary" /> A Lista do Home Broker
+              </CardTitle>
+              <CardDescription>Abra o app do seu banco e execute estas compras hoje usando os seus <strong>{formatBRL(aporte)}</strong> livres.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-4 flex flex-col flex-1">
-              <p className="text-xs text-muted-foreground leading-relaxed mb-4 flex-1">{kit.info}</p>
-              <Button 
-                onClick={() => { setSelectedKit(kit.id); toast.success("Ordem de execução gerada!"); }}
-                variant={selectedKit === kit.id ? 'secondary' : 'default'}
-                className={`w-full ${kit.isMVP && selectedKit !== kit.id ? 'bg-amber-600 hover:bg-amber-700 text-white' : ''}`}
-              >
-                {selectedKit === kit.id ? 'Selecionado' : 'Usar esta Estratégia'}
-              </Button>
+            <CardContent className="pt-6">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {KITS_ALOCACAO.find(k => k.id === selectedKit)?.assets.map(a => (
+                  <div key={a.t} className="p-4 rounded-xl border border-border bg-background flex flex-col justify-between shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                      <p className="text-lg font-black">{a.t}</p>
+                      <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded">{a.split}%</span>
+                    </div>
+                    <div className="pt-2 border-t border-border">
+                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground">Comprar aprox.</p>
+                      <p className="text-base font-bold text-emerald-400">{formatBRL((aporte * a.split) / 100)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
-        ))}
+        )}
       </div>
 
-      {selectedKit && (
-        <Card className="border-primary/40 bg-card mt-8 animate-in slide-in-from-bottom-4 shadow-2xl">
-          <CardHeader className="bg-primary/5 pb-4">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Briefcase className="h-6 w-6 text-primary" /> A Lista do Home Broker
-            </CardTitle>
-            <CardDescription>Abra sua corretora (ou banco) e execute estas compras hoje.</CardDescription>
-          </CardHeader>
+      {/* SEÇÃO 2: NOVIDADE - O RADAR DA IA (A "DICA DO CHURRASCO") */}
+      <div className="pt-10 border-t border-border">
+        <div className="mb-6 space-y-2">
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Search className="h-6 w-6 text-primary" /> Radar da IA (Análise de Dicas)
+          </h2>
+          <p className="text-muted-foreground text-sm">Ouviu falar de uma ação e quer saber se é boa? Digite o código abaixo e a IA vai dar o veredito protegendo seu legado.</p>
+        </div>
+
+        <Card className="bg-muted/10">
           <CardContent className="pt-6">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {KITS_ALOCACAO.find(k => k.id === selectedKit)?.assets.map(a => (
-                <div key={a.t} className="p-4 rounded-xl border border-border bg-background flex flex-col justify-between">
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-xl font-black">{a.t}</p>
-                    <span className="text-[10px] font-bold px-2 py-1 bg-muted rounded">{a.split}%</span>
-                  </div>
+            <div className="flex flex-col sm:flex-row gap-3 items-end max-w-lg">
+              <div className="w-full space-y-2">
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Código na Bolsa (Ex: PETR4, TAEE11)</Label>
+                <Input 
+                  value={searchTicker} 
+                  onChange={(e) => setSearchTicker(e.target.value)} 
+                  placeholder="Digite aqui..." 
+                  className="h-12 text-lg uppercase bg-background"
+                />
+              </div>
+              <Button onClick={handleScan} disabled={isScanning} className="h-12 px-8 w-full sm:w-auto bg-primary text-primary-foreground">
+                {isScanning ? <Loader2 className="h-5 w-5 animate-spin" /> : "Analisar Ativo"}
+              </Button>
+            </div>
+
+            {/* Resultado do Scanner */}
+            {scanResult && (
+              <div className="mt-8 animate-in slide-in-from-bottom-4">
+                <div className={`p-5 rounded-t-xl border border-b-0 border-${scanResult.color}-500/30 bg-${scanResult.color}-500/10 flex items-center gap-4`}>
+                  {scanResult.icon}
                   <div>
-                    <p className="text-[10px] text-muted-foreground">Comprar valor aprox.</p>
-                    <p className="text-lg font-bold text-emerald-400">{formatBRL((aporte * a.split) / 100)}</p>
+                    <h3 className={`text-lg font-bold text-${scanResult.color}-500 uppercase tracking-widest`}>{scanResult.ticker} <span className="text-xs font-normal text-muted-foreground capitalize">({scanResult.name})</span></h3>
+                    <p className="text-sm text-foreground font-medium mt-1">{scanResult.verdict}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-            
-            <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start gap-3">
-              <ShieldCheck className="h-5 w-5 text-emerald-500 mt-0.5" />
-              <p className="text-sm text-emerald-200/90 leading-relaxed">
-                <strong>Pronto!</strong> Esse é o segredo dos grandes investidores: método chato e repetitivo. O sistema guiou seu caminho sem margem para erro. Compre e vá aproveitar a família.
-              </p>
-            </div>
+                <div className="grid sm:grid-cols-2 border border-border rounded-b-xl overflow-hidden bg-card">
+                  <div className="p-5 border-b sm:border-b-0 sm:border-r border-border bg-emerald-500/5">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-500 flex items-center gap-2 mb-4">
+                      <ThumbsUp className="h-4 w-4" /> Prós
+                    </h4>
+                    <ul className="space-y-3">
+                      {scanResult.pros.map((p: string, i: number) => (
+                        <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                          <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" /> <span className="leading-relaxed">{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="p-5 bg-red-500/5">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-red-500 flex items-center gap-2 mb-4">
+                      <ThumbsDown className="h-4 w-4" /> Contras
+                    </h4>
+                    <ul className="space-y-3">
+                      {scanResult.cons.map((c: string, i: number) => (
+                        <li key={i} className="text-sm text-foreground flex items-start gap-2">
+                          <Minus className="h-4 w-4 text-red-500 shrink-0 mt-0.5" /> <span className="leading-relaxed">{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
+
     </div>
   );
 }
