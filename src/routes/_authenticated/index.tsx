@@ -311,6 +311,13 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
     taxaMensal: TAXA_MENSAL_PROJECAO,
   });
 
+  const mensagemSemData =
+    salarioNum <= 0
+      ? "Informe o seu salário no quadro abaixo para o sistema calcular em quanto tempo a sua renda passiva cobre o seu custo de vida."
+      : custoFinal <= 0
+        ? "Defina o seu custo de vida no quadro abaixo. É ele que define quanto a sua carteira precisa gerar por mês."
+        : `Com ${formatBRL(salarioNum)} de salário e ${formatBRL(custoFinal)} de custo de vida não sobra nada para aportar. Reduza o custo de vida no quadro abaixo para o plano começar a andar.`;
+
   return (
     <div className="min-h-screen bg-background flex flex-col animate-in fade-in duration-700">
       <header className="border-b border-border/70 bg-card/60 backdrop-blur-md sticky top-0 z-50">
@@ -367,7 +374,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                     <>
                       <p className="mt-2 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Ainda sem data</p>
                       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                        Hoje não sobra nada para aportar. Ajuste salário e custo de vida no quadro abaixo para o plano começar a andar.
+                        {mensagemSemData}
                       </p>
                     </>
                   ) : (
