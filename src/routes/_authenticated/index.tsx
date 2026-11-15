@@ -15,6 +15,7 @@ import { getDailyGuidance } from "@/lib/guidance.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "@tanstack/react-router";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { BolaDeNeve } from "@/components/bola-de-neve";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: MainApp,
@@ -385,6 +386,9 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
             <TabsTrigger value="ativos" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <LineChart className="h-4 w-4" /> Ativos
             </TabsTrigger>
+            <TabsTrigger value="bola" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
+              <Snowflake className="h-4 w-4" /> Bola de Neve
+            </TabsTrigger>
             <TabsTrigger value="carteira" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <PieChart className="h-4 w-4" /> Carteira
             </TabsTrigger>
@@ -574,6 +578,10 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
           {/* ABA 4: ATIVOS (COM RADAR IA) */}
           <TabsContent value="ativos" className="mt-0">
             <Ativos aporteMensal={aporteSugeridoAtivos} metaReservaAtingida={metaReservaAtingida} />
+          </TabsContent>
+
+          <TabsContent value="bola" className="mt-0">
+            <BolaDeNeve userId={userId} poupanca={liveCapacity} salario={salarioNum} reserva={reservaAcumulada} />
           </TabsContent>
 
           {/* ABA 5: CARTEIRA */}
