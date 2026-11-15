@@ -1,3 +1,5 @@
+import { DiagnosticoVida } from "@/features/onboarding/DiagnosticoVida";
+import { tetoReserva } from "@/features/finance/strategy";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -290,7 +292,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
   const salarioNum = parseNumber(salario);
   const custoIdeal = salarioNum * 0.6; 
   const custoFinal = isEditingCusto ? parseNumber(custoManual) : custoIdeal;
-  const tetoRecomendado = custoFinal * 6; 
+  const tetoRecomendado = tetoReserva(salarioNum); 
   const tetoFinal = isEditingTeto ? parseNumber(tetoManual) : tetoRecomendado;
 
   const liveCapacity = Math.max(0, salarioNum - custoFinal);
@@ -396,6 +398,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
 
           {/* ABA 1: CONTROLE FINANCEIRO */}
           <TabsContent value="financeiro" className="space-y-8 mt-0 animate-in fade-in zoom-in-95 duration-500">
+            <DiagnosticoVida salario={salarioNum} custo={custoFinal} reserva={reservaAcumulada} teto={tetoFinal} />
             <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-card/60 p-6 sm:p-8">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" aria-hidden="true" />
               <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
