@@ -363,7 +363,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
               <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-xl">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Sua liberdade financeira em</p>
-                  {mesesLiberdade === null ? (
+                  {mesesLiberdade === null || !(custoFinal > 0) ? (
                     <>
                       <p className="mt-2 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Ainda sem data</p>
                       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
