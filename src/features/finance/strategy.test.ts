@@ -5,6 +5,9 @@ import {
   isOpportunity,
   distribuirAtivos,
   dividirAporte,
+  patrimonioParaRenda,
+  mesesAteRendaPassiva,
+  descreverMeses,
 } from "./strategy";
 
 describe("capacidadeAporte", () => {
@@ -176,5 +179,38 @@ describe("integração: capacidade → reserva → distribuição com oportunida
     const split = dividirAporte({ aporte: 3000, reservaFaltante: p.reservaFaltante, metaAtingida: p.metaAtingida });
     expect(split.valorReserva).toBe(3000);
     expect(split.valorAtivos).toBe(0);
+  });
+});
+describe("projeção de liberdade financeira", () => {
+  const taxa = 0.08 / 12;
+
+  it("calcula o patrimônio necessário para uma renda mensal", () => {
+    expect(patrimonioParaRenda(2400, taxa)).toBeCloseTo(360000, 6);
+  });
+
+  it("devolve zero quando não há renda alvo ou taxa", () => {
+    expect(patrimonioParaRenda(0, taxa)).toBe(0);
+    expect(patrimonioParaRenda(2400, 0)).toBe(0);
+  });
+
+  it("converte aporte + renda alvo em meses", () => {
+    const meses = mesesAteRendaPassiva({ rendaAlvo: 2400, aporteMensal: 1200, taxaMensal: taxa });
+    expect(meses).not.toBeNull();
+    // patrimônio no mês n = 1200 * ((1+i)^n - 1) / i deve cobrir a renda alvo
+    const n = meses as number;
+    const patrimonio = 1200 * ((Math.pow(1 + taxa, n) - 1) / taxa);
+    expect(patrimonio).toBeGreaterThanOrEqual(360000 - 1);
+  });
+
+  it("não tem data quando não existe aporte", () => {
+    expect(mesesAteRendaPassiva({ rendaAlvo: 2400, aporteMensal: 0, taxaMensal: taxa })).toBeNull();
+    expect(mesesAteRendaPassiva({ rendaAlvo: 2400, aporteMensal: -300, taxaMensal: taxa })).toBeNull();
+  });
+
+  it("descreve meses em anos e meses", () => {
+    expect(descreverMeses(0)).toBe("0 meses");
+    expect(descreverMeses(1)).toBe("1 mês");
+    expect(descreverMeses(12)).toBe("1 ano");
+    expect(descreverMeses(171)).toBe("14 anos e 3 meses");
   });
 });

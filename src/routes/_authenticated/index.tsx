@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
+import { TAXA_MENSAL_PROJECAO, descreverMeses, mesesAteRendaPassiva, patrimonioParaRenda } from "@/features/finance/strategy";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, PiggyBank, ArrowDownRight, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, PieChart, Search, ThumbsUp, ThumbsDown, ChevronUp, ChevronDown } from "lucide-react";
+import { TrendingUp, Wallet, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, PieChart, Search, ThumbsUp, ThumbsDown, ChevronUp, ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -303,6 +304,13 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
     toast.success(`R$ ${valor.toFixed(2)} blindados na Reserva`);
   };
 
+  const patrimonioAlvo = patrimonioParaRenda(custoFinal, TAXA_MENSAL_PROJECAO);
+  const mesesLiberdade = mesesAteRendaPassiva({
+    rendaAlvo: custoFinal,
+    aporteMensal: aporteSugeridoAtivos,
+    taxaMensal: TAXA_MENSAL_PROJECAO,
+  });
+
   return (
     <div className="min-h-screen bg-background flex flex-col animate-in fade-in duration-700">
       <header className="border-b border-border/70 bg-card/60 backdrop-blur-md sticky top-0 z-50">
@@ -350,11 +358,40 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
 
           {/* ABA 1: CONTROLE FINANCEIRO */}
           <TabsContent value="financeiro" className="space-y-8 mt-0 animate-in fade-in zoom-in-95 duration-500">
-            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard icon={<Wallet className="h-4 w-4" />} label="Salário Mensal" value={formatBRL(salarioNum)} />
-              <KpiCard icon={<ArrowDownRight className="h-4 w-4" />} label="Custo de Vida Fixo" value={formatBRL(custoFinal)} />
-              <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Disponível para Ativos" value={formatBRL(aporteSugeridoAtivos)} highlight />
-              <KpiCard icon={<PiggyBank className="h-4 w-4" />} label="Reserva Acumulada" value={formatBRL(reservaAcumulada)} />
+            <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-card/60 p-6 sm:p-8">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" aria-hidden="true" />
+              <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-xl">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">Sua liberdade financeira em</p>
+                  {mesesLiberdade === null ? (
+                    <>
+                      <p className="mt-2 text-3xl font-black tracking-tight text-foreground sm:text-4xl">Ainda sem data</p>
+                      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                        Hoje não sobra nada para aportar. Ajuste salário e custo de vida no quadro abaixo para o plano começar a andar.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-2 text-4xl font-black tabular-nums tracking-tight text-foreground sm:text-5xl">
+                        {descreverMeses(mesesLiberdade)}
+                      </p>
+                      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                        Com <strong className="font-semibold text-foreground">{formatBRL(aporteSugeridoAtivos)}</strong> por mês em ativos, seus proventos chegam a{" "}
+                        <strong className="font-semibold text-foreground">{formatBRL(custoFinal)}</strong> por mês — o seu custo de vida de hoje. Daí em diante, trabalhar vira escolha.
+                      </p>
+                    </>
+                  )}
+                  <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/80">
+                    Projeção com {(TAXA_MENSAL_PROJECAO * 100).toFixed(1).replace(".", ",")}% ao mês e proventos reinvestidos. É estimativa, não promessa de rentabilidade.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-border/60 lg:min-w-[21rem]">
+                  <HeroMetric label="Custo de vida" value={formatBRL(custoFinal)} />
+                  <HeroMetric label="Aporte em ativos" value={formatBRL(aporteSugeridoAtivos)} />
+                  <HeroMetric label="Patrimônio-alvo" value={formatBRL(patrimonioAlvo)} />
+                </div>
+              </div>
             </section>
 
             <Card>
@@ -505,6 +542,15 @@ function KpiCard({ icon, label, value, highlight, variation }: { icon: ReactNode
   );
 }
 
+function HeroMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-t border-border/60 pt-3 sm:border-t-0 sm:px-4 sm:pt-0 lg:text-right">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
+      <p className="mt-1 text-base font-bold tabular-nums text-foreground">{value}</p>
+    </div>
+  );
+}
+
 // ============================================================
 // ESTRATEGISTA
 // ============================================================
@@ -520,22 +566,8 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
   const valorAtivos = metaReservaAtingida ? v : Math.max(0, v - valorReserva);
   const aporteAcao = valorAtivos > 0 ? valorAtivos : 1; 
 
-  const TAXA_ANUAL_DIVIDENDOS = 0.08; 
-  const taxaMensal = TAXA_ANUAL_DIVIDENDOS / 12;
-
-  const calcularMesesParaRenda = (rendaAlvo: number) => {
-    if (rendaAlvo <= 0) return 0;
-    const n = Math.log((rendaAlvo / aporteAcao) + 1) / Math.log(1 + taxaMensal);
-    return Math.ceil(n);
-  };
-
-  const converterMeses = (totalMeses: number) => {
-    const anos = Math.floor(totalMeses / 12);
-    const meses = totalMeses % 12;
-    if (anos === 0) return `${meses} meses`;
-    if (meses === 0) return `${anos} anos`;
-    return `${anos} anos e ${meses} meses`;
-  };
+  const mesesParaRenda = (rendaAlvo: number) =>
+    mesesAteRendaPassiva({ rendaAlvo, aporteMensal: aporteAcao, taxaMensal: TAXA_MENSAL_PROJECAO }) ?? 0;
 
   return (
     <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
@@ -573,7 +605,7 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
               <div>
                 <h4 className="text-sm font-bold text-emerald-400">Marco 1: O Primeiro Pingo (R$ 150/mês)</h4>
                 <p className="text-xs text-muted-foreground mt-1">O sistema paga sua conta de internet de forma perpétua.</p>
-                <p className="text-lg font-black text-foreground mt-2">Alvo em {converterMeses(calcularMesesParaRenda(150))}</p>
+                <p className="text-lg font-black text-foreground mt-2">Alvo em {descreverMeses(mesesParaRenda(150))}</p>
               </div>
             </div>
             <div className="relative pl-6 border-l-2 border-sky-500/30 pb-2">
@@ -583,7 +615,7 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
               <div>
                 <h4 className="text-sm font-bold text-sky-400">Marco 2: Ponto de Virada ({formatBRL(aporteAcao)}/mês)</h4>
                 <p className="text-xs text-muted-foreground mt-1">Os juros mensais empatam com o seu esforço. Seu dinheiro trabalha tanto quanto você.</p>
-                <p className="text-lg font-black text-foreground mt-2">Alvo em {converterMeses(calcularMesesParaRenda(aporteAcao))}</p>
+                <p className="text-lg font-black text-foreground mt-2">Alvo em {descreverMeses(mesesParaRenda(aporteAcao))}</p>
               </div>
             </div>
             <div className="relative pl-6 border-l-2 border-transparent">
@@ -593,7 +625,7 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
               <div>
                 <h4 className="text-sm font-bold text-amber-500">Marco 3: Colheita Final ({formatBRL(custoFixo)}/mês)</h4>
                 <p className="text-xs text-muted-foreground mt-1">Liberdade total. O patrimônio paga o custo de vida fixo da família e gera herança infinita.</p>
-                <p className="text-lg font-black text-foreground mt-2">Alvo em {converterMeses(calcularMesesParaRenda(custoFixo))}</p>
+                <p className="text-lg font-black text-foreground mt-2">Alvo em {descreverMeses(mesesParaRenda(custoFixo))}</p>
               </div>
             </div>
           </div>

@@ -56,6 +56,49 @@ export function priorizarReserva(params: {
   return { reservaFaltante, sugestaoReserva, aporteSugerido, metaAtingida };
 }
 
+/** Taxa mensal usada nas projeções de longo prazo (8% ao ano em proventos). */
+export const TAXA_MENSAL_PROJECAO = 0.08 / 12;
+
+/**
+ * Patrimônio necessário para a carteira gerar `rendaMensal` de renda passiva,
+ * considerando que o patrimônio rende `taxaMensal`.
+ */
+export function patrimonioParaRenda(rendaMensal: number, taxaMensal: number): number {
+  if (!(rendaMensal > 0) || !(taxaMensal > 0)) return 0;
+  return rendaMensal / taxaMensal;
+}
+
+/**
+ * Meses até a renda passiva cobrir `rendaAlvo`, com aportes mensais iguais e
+ * rendimento de `taxaMensal` ao mês (aporte ao fim de cada mês).
+ *
+ * Retorna 0 quando não há renda alvo e `null` quando não existe aporte — nesse
+ * caso o plano não chega a lugar algum.
+ */
+export function mesesAteRendaPassiva(params: {
+  rendaAlvo: number;
+  aporteMensal: number;
+  taxaMensal: number;
+}): number | null {
+  const renda = params.rendaAlvo;
+  const aporte = params.aporteMensal;
+  const taxa = params.taxaMensal;
+  if (!(renda > 0)) return 0;
+  if (!(aporte > 0) || !(taxa > 0)) return null;
+  return Math.ceil(Math.log(renda / aporte + 1) / Math.log(1 + taxa));
+}
+
+/** "14 anos e 3 meses" a partir de um total de meses. */
+export function descreverMeses(totalMeses: number): string {
+  const meses = Math.max(0, Math.round(totalMeses));
+  const anos = Math.floor(meses / 12);
+  const resto = meses % 12;
+  const plural = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
+  if (anos === 0) return plural(resto, "mês", "meses");
+  if (resto === 0) return plural(anos, "ano", "anos");
+  return `${plural(anos, "ano", "anos")} e ${plural(resto, "mês", "meses")}`;
+}
+
 /** True quando a queda do dia for maior que 3% (i.e. variação ≤ -3%). */
 export function isOpportunity(change: number | null): boolean {
   return change !== null && change <= -3;
