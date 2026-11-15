@@ -305,39 +305,45 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
 
   return (
     <div className="min-h-screen bg-background flex flex-col animate-in fade-in duration-700">
-      <header className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              <span className="text-primary">AudasYAs</span> Invest
-            </h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Painel de Governança</p>
+      <header className="border-b border-border/70 bg-card/60 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
+              <Compass className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold leading-tight tracking-tight truncate">
+                <span className="text-primary">AudasYAs</span> Invest
+              </h1>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-[0.18em]">Painel de Governança</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={onSignOut} className="gap-2 text-xs">
-              <LogOut className="h-4 w-4" /> Sair
+            <div className="h-6 w-px bg-border/70" aria-hidden="true" />
+            <Button variant="ghost" size="sm" onClick={onSignOut} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sair</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full sm:w-auto grid-cols-2 md:grid-cols-5 gap-2 bg-transparent">
-            <TabsTrigger value="financeiro" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:py-8 space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 sm:space-y-8">
+          <TabsList className="flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-border/70 bg-card/50 p-1 backdrop-blur-sm">
+            <TabsTrigger value="financeiro" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <Wallet className="h-4 w-4" /> Controle
             </TabsTrigger>
-            <TabsTrigger value="estrategista" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+            <TabsTrigger value="estrategista" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <Target className="h-4 w-4" /> Estrategista
             </TabsTrigger>
-            <TabsTrigger value="leme" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+            <TabsTrigger value="leme" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <Compass className="h-4 w-4" /> Leme da Vida
             </TabsTrigger>
-            <TabsTrigger value="ativos" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+            <TabsTrigger value="ativos" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <LineChart className="h-4 w-4" /> Ativos
             </TabsTrigger>
-            <TabsTrigger value="carteira" className="gap-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary rounded-lg border border-transparent data-[state=active]:border-primary/20">
+            <TabsTrigger value="carteira" className="shrink-0 gap-2 whitespace-nowrap sm:flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm sm:text-sm">
               <PieChart className="h-4 w-4" /> Carteira
             </TabsTrigger>
           </TabsList>
@@ -476,20 +482,22 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
 
 function KpiCard({ icon, label, value, highlight, variation }: { icon: ReactNode; label: string; value: string; highlight?: boolean, variation?: string }) {
   return (
-    <Card className={`border-l-4 ${highlight ? "border-l-primary bg-primary/5 border-y-primary/20 border-r-primary/20" : "border-l-muted-foreground/30"}`}>
-      <CardContent className="p-4 sm:p-5 relative">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 text-muted-foreground text-[10px] uppercase tracking-widest font-semibold">
-            {icon} <span>{label}</span>
+    <Card className={`relative overflow-hidden rounded-xl border transition-colors ${highlight ? "border-primary/30 bg-primary/[0.07]" : "border-border/70 bg-card/70"}`}>
+      {highlight && <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" aria-hidden="true" />}
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${highlight ? "bg-primary/15 text-primary" : "bg-muted/60 text-muted-foreground"}`}>
+            {icon}
           </div>
           {variation && (
-            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center ${variation.includes('+') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+            <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 ${variation.includes('+') ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
               {variation.includes('+') ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               {variation.replace('+', '').replace('-', '')}
             </div>
           )}
         </div>
-        <p className={`text-2xl font-black tabular-nums tracking-tight ${highlight ? "text-primary" : "text-foreground"}`}>
+        <p className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-1">{label}</p>
+        <p className={`text-xl sm:text-2xl font-bold tabular-nums tracking-tight ${highlight ? "text-primary" : "text-foreground"}`}>
           {value}
         </p>
       </CardContent>
@@ -875,6 +883,15 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
     }, 1500);
   };
 
+  const scanAccent =
+    scanResult?.status === "danger"
+      ? { box: "border-red-500/30 bg-red-500/10", title: "text-red-500" }
+      : scanResult?.status === "success"
+      ? { box: "border-emerald-500/30 bg-emerald-500/10", title: "text-emerald-500" }
+      : scanResult?.status === "warning"
+      ? { box: "border-amber-500/30 bg-amber-500/10", title: "text-amber-500" }
+      : { box: "border-sky-500/30 bg-sky-500/10", title: "text-sky-500" };
+
   return (
     <div className="space-y-12 animate-in fade-in zoom-in-95 duration-500 pb-10">
       
@@ -937,8 +954,8 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
               
               <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-start gap-3">
                 <ShieldCheck className="h-5 w-5 text-emerald-500 mt-0.5" />
-                <p className="text-sm text-emerald-200/90 leading-relaxed">
-                  <strong>Pronto!</strong> Esse é o segredo dos grandes investidores: método chato e repetitivo. O sistema guiou seu caminho sem margem para erro. Compre e vá aproveitar a família.
+                <p className="text-sm text-foreground/85 leading-relaxed">
+                  <strong className="text-emerald-500">Pronto!</strong> Esse é o segredo dos grandes investidores: método chato e repetitivo. O sistema guiou seu caminho sem margem para erro. Compre e vá aproveitar a família.
                 </p>
               </div>
             </CardContent>
@@ -974,10 +991,10 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
 
             {scanResult && (
               <div className="mt-8 animate-in slide-in-from-bottom-4">
-                <div className={`p-5 rounded-t-xl border border-b-0 border-${scanResult.color}-500/30 bg-${scanResult.color}-500/10 flex items-center gap-4`}>
+                <div className={`p-5 rounded-t-xl border border-b-0 ${scanAccent.box} flex items-center gap-4`}>
                   {scanResult.icon}
                   <div>
-                    <h3 className={`text-lg font-bold text-${scanResult.color}-500 uppercase tracking-widest`}>{scanResult.ticker} <span className="text-xs font-normal text-muted-foreground capitalize">({scanResult.name})</span></h3>
+                    <h3 className={`text-lg font-bold ${scanAccent.title} uppercase tracking-widest`}>{scanResult.ticker} <span className="text-xs font-normal text-muted-foreground capitalize">({scanResult.name})</span></h3>
                     <p className="text-sm text-foreground font-medium mt-1">{scanResult.verdict}</p>
                   </div>
                 </div>

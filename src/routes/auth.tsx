@@ -78,9 +78,11 @@ function AuthPage() {
         <ThemeToggle />
       </div>
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 text-primary">
-            <Compass className="h-6 w-6" />
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
+              <Compass className="h-5 w-5" />
+            </span>
             <span className="text-2xl font-bold tracking-tight">
               <span className="text-primary">AudasYAs</span>{" "}
               <span className="text-foreground">Invest</span>
@@ -91,7 +93,7 @@ function AuthPage() {
           </p>
         </div>
 
-        <Card className="border-primary/20 bg-card/80 backdrop-blur">
+        <Card className="rounded-2xl border-border/70 bg-card/80 shadow-xl backdrop-blur">
           <CardHeader>
             <CardTitle>{mode === "signin" ? "Entrar" : "Criar conta"}</CardTitle>
             <CardDescription>
