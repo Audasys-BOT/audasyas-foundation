@@ -256,3 +256,30 @@ export function valorFuturoAportes(params: {
   if (!(params.taxaMensal > 0)) return aporte * meses;
   return aporte * ((Math.pow(1 + params.taxaMensal, meses) - 1) / params.taxaMensal);
 }
+/** Teto da Reserva de Emergência: 3x o salário líquido. */
+export function tetoReserva(salario: number): number {
+  return salario > 0 ? salario * 3 : 0;
+}
+
+export type DiagnosticoVida = "saudavel" | "atencao" | "alerta";
+/** Custo de vida saudável: até 70% do salário (degrau abaixo). Acima de 90% é alerta. */
+export function diagnosticoCustoVida(salario: number, custo: number): DiagnosticoVida {
+  if (salario <= 0) return "alerta";
+  const pct = custo / salario;
+  if (pct <= 0.7) return "saudavel";
+  if (pct <= 0.9) return "atencao";
+  return "alerta";
+}
+
+/** Valor futuro de um aporte mensal fixo (juros compostos mensais). */
+export function sorveteParaSorveteria(aporteMensal: number, anos: number, taxaMensal = TAXA_MENSAL_PROJECAO): number {
+  const n = Math.max(0, Math.round(anos * 12));
+  if (aporteMensal <= 0 || n === 0) return 0;
+  if (taxaMensal === 0) return aporteMensal * n;
+  return aporteMensal * ((Math.pow(1 + taxaMensal, n) - 1) / taxaMensal);
+}
+
+/** Quanto da reserva passou do teto e pode migrar para a carteira de legado. */
+export function transbordoReserva(reserva: number, teto: number): number {
+  return teto > 0 ? Math.max(0, reserva - teto) : 0;
+}
