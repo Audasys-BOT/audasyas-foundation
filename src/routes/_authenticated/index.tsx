@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
 import { TAXA_MENSAL_PROJECAO, descreverMeses, mesesAteRendaPassiva, patrimonioParaRenda } from "@/features/finance/strategy";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, Trash2, Compass, Sparkles, RefreshCw, Sprout, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, PieChart, Search, ThumbsUp, ThumbsDown, ChevronUp, ChevronDown } from "lucide-react";
+import { TrendingUp, Wallet, Trash2, Compass, Sparkles, RefreshCw, Sprout, Leaf, Wheat, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, PieChart, Search, ThumbsUp, ThumbsDown, ChevronUp, ChevronDown, type LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -233,6 +233,30 @@ function SelectionCard({ title, selected, highlight, onClick }: { title: string;
 }
 
 // ============================================================
+// A JORNADA DO ESCUDO (BROTO -> COLHEITA)
+// ============================================================
+type NivelEscudo = { nome: string; Icone: LucideIcon; tom: string; pct: number };
+
+const NIVEIS_ESCUDO: NivelEscudo[] = [
+  { nome: "Broto", Icone: Sprout, tom: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400", pct: 16.6 },
+  { nome: "Raiz Forte", Icone: Leaf, tom: "border-teal-500/30 bg-teal-500/10 text-teal-300", pct: 50 },
+  { nome: "Árvore Firme", Icone: Trees, tom: "border-primary/35 bg-primary/10 text-primary", pct: 75 },
+  { nome: "Colheita", Icone: Wheat, tom: "border-amber-500/35 bg-amber-500/10 text-amber-400", pct: 100 },
+];
+
+const NIVEL_INICIAL: NivelEscudo = { nome: "Definindo base", Icone: Sprout, tom: "border-border bg-muted/40 text-muted-foreground", pct: 0 };
+
+function NivelBadge({ nivel }: { nivel: NivelEscudo }) {
+  const { Icone, nome, tom } = nivel;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${tom}`}>
+      <Icone className="h-3.5 w-3.5" aria-hidden="true" />
+      {nome}
+    </span>
+  );
+}
+
+// ============================================================
 // O DASHBOARD PRINCIPAL (PAINEL APÓS ONBOARDING)
 // ============================================================
 function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => void }) {
@@ -271,12 +295,14 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
   const percentualCusto = salarioNum > 0 ? (custoFinal / salarioNum) * 100 : 0;
   const pctProgressoReserva = tetoFinal > 0 ? Math.min(100, (reservaAcumulada / tetoFinal) * 100) : 0;
   
-  const { rankAtual, proximoRank, valorProximoAlvo } = useMemo(() => {
-    if (pctProgressoReserva >= 100) return { rankAtual: "🏆 Nível 4: Colheita da Tâmara", proximoRank: "Meta Concluída!", valorProximoAlvo: tetoFinal };
-    if (pctProgressoReserva >= 75) return { rankAtual: "🌳 Nível 3: Árvore Firme", proximoRank: "🏆 Nível 4: Colheita da Tâmara", valorProximoAlvo: tetoFinal };
-    if (pctProgressoReserva >= 50) return { rankAtual: "🌿 Nível 2: Raiz Forte", proximoRank: "🌳 Nível 3: Árvore Firme", valorProximoAlvo: tetoFinal * 0.75 };
-    if (pctProgressoReserva >= 16.6) return { rankAtual: "🌱 Nível 1: Broto", proximoRank: "🌿 Nível 2: Raiz Forte", valorProximoAlvo: tetoFinal * 0.5 };
-    return { rankAtual: "Definindo Base 🌱", proximoRank: "🌱 Nível 1: Broto", valorProximoAlvo: tetoFinal * 0.166 };
+  const { nivelAtual, proximoNivel, valorProximoAlvo } = useMemo(() => {
+    const indice = NIVEIS_ESCUDO.findIndex((n) => pctProgressoReserva < n.pct);
+    if (indice === -1) return { nivelAtual: NIVEIS_ESCUDO[NIVEIS_ESCUDO.length - 1], proximoNivel: null, valorProximoAlvo: tetoFinal };
+    return {
+      nivelAtual: indice === 0 ? NIVEL_INICIAL : NIVEIS_ESCUDO[indice - 1],
+      proximoNivel: NIVEIS_ESCUDO[indice],
+      valorProximoAlvo: tetoFinal * (NIVEIS_ESCUDO[indice].pct / 100),
+    };
   }, [pctProgressoReserva, tetoFinal]);
 
   const faltamParaProximo = Math.max(0, valorProximoAlvo - reservaAcumulada);
@@ -431,7 +457,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                   <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                     <div>
                       <h4 className="font-bold flex items-center gap-2">
-                        Escudo Familiar <span className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary">{rankAtual}</span>
+                        Escudo Familiar <NivelBadge nivel={nivelAtual} />
                       </h4>
                       <p className="text-sm text-muted-foreground mt-1">
                         Teto de 6 meses de segurança: <span className="text-foreground font-semibold">{formatBRL(tetoFinal)}</span>
@@ -445,12 +471,39 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                     </div>
                     <div className="flex justify-between text-[11px] font-medium text-muted-foreground px-0.5">
                       <span>{pctProgressoReserva.toFixed(1)}% Blindado</span>
-                      {pctProgressoReserva < 100 ? (
-                        <span>Próximo alvo: Mais {formatBRL(faltamParaProximo)} p/ {proximoRank}</span>
+                      {proximoNivel ? (
+                        <span>Próximo alvo: mais {formatBRL(faltamParaProximo)} para {proximoNivel.nome}</span>
                       ) : (
                         <span className="text-emerald-400">100% Protegido</span>
                       )}
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Etapas do Escudo Familiar">
+                    {NIVEIS_ESCUDO.map((nivel) => {
+                      const { Icone, nome, tom } = nivel;
+                      const alcancado = pctProgressoReserva >= nivel.pct;
+                      const atual = nivelAtual.nome === nome;
+                      const proximo = proximoNivel?.nome === nome;
+                      return (
+                        <div
+                          key={nome}
+                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors ${
+                            atual
+                              ? tom
+                              : alcancado
+                                ? "border-border bg-muted/30 text-foreground/70"
+                                : proximo
+                                  ? "border-border bg-muted/20 text-muted-foreground"
+                                  : "border-border/50 bg-transparent text-muted-foreground/50"
+                          }`}
+                        >
+                          <Icone className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{nome}</span>
+                          <span className="sr-only">{atual ? "— etapa atual" : alcancado ? "— etapa concluída" : proximo ? "— próxima etapa" : "— etapa futura"}</span>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className={`p-4 rounded-xl border flex gap-3 ${metaReservaAtingida ? "bg-emerald-500/5 border-emerald-500/20" : isProntidaoSegura ? "bg-sky-500/5 border-sky-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
@@ -845,7 +898,9 @@ function MilestoneCard({ milestone, birth }: { milestone: Milestone; birth: stri
         {!remaining ? (
           <p className="text-[10px] text-muted-foreground">Calculando...</p>
         ) : remaining.reached ? (
-          <p className="text-sm font-bold text-primary">Marco 100% Alcançado 🌱</p>
+          <p className="flex items-center gap-1.5 text-sm font-bold text-primary">
+            <Sprout className="h-4 w-4" aria-hidden="true" /> Marco alcançado
+          </p>
         ) : (
           <p className="text-sm font-semibold text-foreground">Faltam {remaining.years} anos</p>
         )}
