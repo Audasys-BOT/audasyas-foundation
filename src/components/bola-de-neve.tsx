@@ -6,6 +6,7 @@ import { formatBRL, parseNumber } from "@/lib/format";
 import { poderDeCompra, alocacaoBarbell, metaReserva1Ano, cotasGratis } from "@/features/finance/snowball";
 import { Snowflake, Flame, Landmark, CheckCircle2, AlertTriangle, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type Ordem = { ticker: string; preco: number; peso: number; pimenta?: boolean };
 const BASE: Ordem[] = [
@@ -33,8 +34,15 @@ export function BolaDeNeve({ userId, poupanca, salario, reserva }: { userId: str
         setS(v.mes === mesAtual() ? v : { ...v, feitas: [], mes: mesAtual() });
       }
     } catch {}
-  }, [key]);
-  const save = (n: State) => { setS(n); localStorage.setItem(key, JSON.stringify(n)); };
+    supabase.from("snowball_state").select("data").eq("user_id", userId).maybeSingle().then(({ data }) => {
+      const v = data?.data as unknown as State | undefined;
+      if (v && v.mes) { const n = v.mes === mesAtual() ? v : { ...v, feitas: [], mes: mesAtual() }; setS(n); localStorage.setItem(key, JSON.stringify(n)); }
+    });
+  }, [key, userId]);
+  const save = (n: State) => {
+    setS(n); localStorage.setItem(key, JSON.stringify(n));
+    supabase.from("snowball_state").upsert({ user_id: userId, data: n as never, updated_at: new Date().toISOString() }).then(({ error }) => { if (error) toast.error("Não foi possível salvar na nuvem"); });
+  };
 
   const r = metaReserva1Ano(salario, reserva);
   const reservaMes = Math.min(r.parcelaMensal, poupanca);
