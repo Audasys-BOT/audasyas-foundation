@@ -8,6 +8,10 @@ import {
   patrimonioParaRenda,
   mesesAteRendaPassiva,
   descreverMeses,
+  diasAteData,
+  mesesAteData,
+  resumoDividas,
+  valorFuturoAportes,
 } from "./strategy";
 
 describe("capacidadeAporte", () => {
@@ -212,5 +216,72 @@ describe("projeção de liberdade financeira", () => {
     expect(descreverMeses(1)).toBe("1 mês");
     expect(descreverMeses(12)).toBe("1 ano");
     expect(descreverMeses(171)).toBe("14 anos e 3 meses");
+  });
+});
+
+describe("contagem regressiva de dívidas", () => {
+  // Fixa "hoje" em 06/06/2026 para os testes serem determinísticos.
+  const hoje = new Date(2026, 5, 6);
+
+  it("conta dias até a data e devolve negativo quando já passou", () => {
+    expect(diasAteData("2026-06-06", hoje)).toBe(0);
+    expect(diasAteData("2027-06-06", hoje)).toBe(365);
+    expect(diasAteData("2026-05-06", hoje)).toBe(-31);
+    expect(diasAteData("data-invalida", hoje)).toBe(0);
+  });
+
+  it("converte a data final em meses cheios", () => {
+    expect(mesesAteData("2027-06-06", hoje)).toBe(12);
+    expect(mesesAteData("2027-11-15", hoje)).toBe(18);
+    expect(mesesAteData("2026-06-06", hoje)).toBe(0);
+  });
+
+  it("consolida o dinheiro preso por mês e até a quitação", () => {
+    const r = resumoDividas(
+      [
+        { id: "carro", nome: "Carro", parcela: 1300, ultimaParcela: "2027-06-06" }, // 12 meses
+        { id: "cartao", nome: "Cartão", parcela: 200, ultimaParcela: "2027-11-15" }, // 18 meses
+      ],
+      hoje,
+    );
+    expect(r.totalMensal).toBe(1500);
+    expect(r.totalAPagar).toBe(1300 * 12 + 200 * 18);
+    expect(r.mesesAteLiberdade).toBe(18);
+    expect(r.dataLiberdade).toBe("2027-11-15");
+    // ordenado da quitação mais próxima para a mais distante
+    expect(r.detalhes.map((d) => d.id)).toEqual(["carro", "cartao"]);
+    expect(r.detalhes[0].mesesRestantes).toBe(12);
+    expect(r.detalhes[0].diasRestantes).toBe(365);
+  });
+
+  it("deixa de fora as dívidas já vencidas", () => {
+    const r = resumoDividas(
+      [{ id: "antiga", nome: "Empréstimo antigo", parcela: 500, ultimaParcela: "2026-01-10" }],
+      hoje,
+    );
+    expect(r.detalhes[0].quitada).toBe(true);
+    expect(r.totalMensal).toBe(0);
+    expect(r.totalAPagar).toBe(0);
+    expect(r.mesesAteLiberdade).toBe(0);
+    expect(r.dataLiberdade).toBeNull();
+  });
+
+  it("ignora parcelas negativas ou ausentes", () => {
+    const r = resumoDividas(
+      [{ id: "x", nome: "Sem valor", parcela: -100, ultimaParcela: "2027-06-06" }],
+      hoje,
+    );
+    expect(r.totalMensal).toBe(0);
+    expect(r.detalhes[0].restanteAPagar).toBe(0);
+  });
+
+  it("projeta o valor do dinheiro liberado após a quitação", () => {
+    const taxa = 0.08 / 12;
+    expect(valorFuturoAportes({ aporteMensal: 1000, meses: 12, taxaMensal: 0 })).toBe(12000);
+    const comJuros = valorFuturoAportes({ aporteMensal: 1000, meses: 12, taxaMensal: taxa });
+    expect(comJuros).toBeGreaterThan(12000);
+    expect(comJuros).toBeCloseTo(1000 * ((Math.pow(1 + taxa, 12) - 1) / taxa), 6);
+    expect(valorFuturoAportes({ aporteMensal: 0, meses: 12, taxaMensal: taxa })).toBe(0);
+    expect(valorFuturoAportes({ aporteMensal: 1000, meses: 0, taxaMensal: taxa })).toBe(0);
   });
 });

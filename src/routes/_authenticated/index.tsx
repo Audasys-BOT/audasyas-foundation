@@ -6,9 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatBRL, parseNumber } from "@/lib/format";
-import { TAXA_MENSAL_PROJECAO, descreverMeses, mesesAteRendaPassiva, patrimonioParaRenda } from "@/features/finance/strategy";
+import { TAXA_MENSAL_PROJECAO, descreverMeses, mesesAteRendaPassiva, patrimonioParaRenda, resumoDividas, diasAteData, valorFuturoAportes, type Divida } from "@/features/finance/strategy";
 import { toast } from "sonner";
-import { TrendingUp, Wallet, Trash2, Compass, Sparkles, RefreshCw, Sprout, Leaf, Wheat, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, PieChart, Search, ThumbsUp, ThumbsDown, ChevronUp, ChevronDown, type LucideIcon } from "lucide-react";
+import { TrendingUp, Wallet, Trash2, Compass, Sparkles, RefreshCw, Sprout, Leaf, Wheat, Sun, Trees, LineChart, Plus, Brain, Loader2, Target, Snowflake, Zap, LogOut, Pencil, Minus, ShieldAlert, ShieldCheck, Droplets, Crown, CheckCircle2, AlertTriangle, Coffee, Info, Activity, Briefcase, ArrowRight, Check, PieChart, Search, ThumbsUp, ThumbsDown, ChevronUp, ChevronDown, Hourglass, Lock, type LucideIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getDailyGuidance } from "@/lib/guidance.functions";
@@ -24,6 +24,7 @@ const ONBOARDING_DONE_KEY = "audasyas:onboarding_done";
 const PROFILE_KEY_BASE = "audasyas:invest_profile";
 const BIRTH_KEY_BASE = "audasyas:birthdate";
 const FINANCIAL_KEY_BASE = "audasyas:financial_base";
+const DEBTS_KEY_BASE = "audasyas:dividas";
 
 // ============================================================
 // COMPONENTE PAI: GERENCIA O FLUXO (WIZARD VS DASHBOARD)
@@ -426,6 +427,8 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                 </div>
               </div>
             </section>
+
+            <ContagemRegressivaDividas userId={userId} capacidade={liveCapacity} />
 
             <Card>
               <CardHeader>
@@ -1255,5 +1258,277 @@ function MinhaCarteira() {
         </Card>
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// CONTAGEM REGRESSIVA DAS DÍVIDAS (DINHEIRO APRISIONADO)
+// ============================================================
+function formatarDataCurta(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function formatarMesAno(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" });
+}
+
+function ContagemRegressivaDividas({ userId, capacidade }: { userId: string; capacidade: number }) {
+  const [dividas, setDividas] = useState<Divida[]>([]);
+  const [nome, setNome] = useState("");
+  const [parcela, setParcela] = useState("");
+  const [ultima, setUltima] = useState("");
+  const [hoje, setHoje] = useState(() => new Date());
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(`${DEBTS_KEY_BASE}:${userId}`);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) {
+        setDividas(
+          parsed
+            .filter(
+              (d: Partial<Divida>) =>
+                d && typeof d.nome === "string" && typeof d.parcela === "number" && typeof d.ultimaParcela === "string",
+            )
+            .map((d: Divida) => ({
+              id: String(d.id ?? d.nome),
+              nome: d.nome,
+              parcela: d.parcela,
+              ultimaParcela: d.ultimaParcela,
+            })),
+        );
+      }
+    } catch (e) {}
+  }, [userId]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setHoje(new Date()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const resumo = useMemo(() => resumoDividas(dividas, hoje), [dividas, hoje]);
+
+  const persistir = (lista: Divida[]) => {
+    setDividas(lista);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(`${DEBTS_KEY_BASE}:${userId}`, JSON.stringify(lista));
+      } catch (e) {}
+    }
+  };
+
+  const adicionar = () => {
+    const valor = parseNumber(parcela);
+    if (!nome.trim()) return toast.error("Dê um nome à dívida (ex: Parcela do carro).");
+    if (valor <= 0) return toast.error("Informe o valor da parcela.");
+    if (!ultima) return toast.error("Informe a data da última parcela.");
+    if (diasAteData(ultima, new Date()) < 0) return toast.error("Essa data já passou. Confira o ano da última parcela.");
+    const nova: Divida = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      nome: nome.trim(),
+      parcela: valor,
+      ultimaParcela: ultima,
+    };
+    persistir([...dividas, nova]);
+    setNome("");
+    setParcela("");
+    setUltima("");
+    toast.success("Dívida na contagem regressiva.");
+  };
+
+  const remover = (id: string) => {
+    persistir(dividas.filter((d) => d.id !== id));
+    toast.success("Dívida removida da contagem.");
+  };
+
+  const patrimonioFuturo = valorFuturoAportes({
+    aporteMensal: resumo.totalMensal,
+    meses: 120,
+    taxaMensal: TAXA_MENSAL_PROJECAO,
+  });
+  const rendaFutura = patrimonioFuturo * TAXA_MENSAL_PROJECAO;
+  const temDividas = resumo.detalhes.length > 0;
+  const prazoMaisLongo = Math.max(1, resumo.mesesAteLiberdade);
+
+  return (
+    <Card className="border-amber-500/25">
+      <CardHeader>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="flex items-center gap-2">
+              <Hourglass className="h-5 w-5 text-amber-500" /> Contagem Regressiva das Dívidas
+            </CardTitle>
+            <CardDescription className="mt-1">
+              As parcelas ficam aqui, fora do custo de vida fixo, com data para acabar. Enquanto elas existem, esse dinheiro está preso.
+            </CardDescription>
+          </div>
+          {resumo.totalMensal > 0 && (
+            <div className="shrink-0 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 sm:text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-600">Preso por mês</p>
+              <p className="text-lg font-bold tabular-nums text-amber-600">{formatBRL(resumo.totalMensal)}</p>
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {temDividas && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Ainda vai sair do bolso</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-foreground">{formatBRL(resumo.totalAPagar)}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Somando as parcelas que faltam.</p>
+              </div>
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Faltam</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-foreground">{descreverMeses(resumo.mesesAteLiberdade)}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {resumo.dataLiberdade ? `Até ${formatarMesAno(resumo.dataLiberdade)}, quando cai a última parcela.` : "Até a última parcela cair."}
+                </p>
+              </div>
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Compromete</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-amber-600">
+                  {capacidade > 0 ? `${Math.round((resumo.totalMensal / capacidade) * 100)}% do que sobra` : "—"}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {capacidade > 0 ? "Das parcelas sobre a sua capacidade de aporte." : "Defina salário e custo de vida acima para comparar."}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="flex items-center gap-2 text-sm font-bold">
+                  <Lock className="h-4 w-4 text-amber-500" /> Dinheiro preso até a quitação
+                </h4>
+                <span className="text-[10px] text-muted-foreground">a barra é o tempo que ainda falta, comparado ao prazo mais longo</span>
+              </div>
+
+              {resumo.detalhes.map((d) => {
+                const pct = d.quitada ? 100 : Math.min(100, Math.max(4, (d.mesesRestantes / prazoMaisLongo) * 100));
+                return (
+                  <div
+                    key={d.id}
+                    className={`rounded-xl border p-4 ${d.quitada ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-card"}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{d.nome}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {formatBRL(d.parcela)}/mês · última parcela em {formatarDataCurta(d.ultimaParcela)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className={`text-xs font-bold tabular-nums ${d.quitada ? "text-emerald-500" : "text-amber-600"}`}>
+                          {d.quitada ? "Quitada" : `faltam ${d.diasRestantes} dias`}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                          aria-label={`Remover ${d.nome}`}
+                          onClick={() => remover(d.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full ${d.quitada ? "bg-emerald-500" : "bg-amber-500/80"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      {d.quitada
+                        ? "Essa parcela já saiu do seu orçamento."
+                        : `${descreverMeses(d.mesesRestantes)} presos · ${formatBRL(d.restanteAPagar)} ainda a pagar`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {resumo.totalMensal > 0 && (
+              <div className="space-y-2 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-4">
+                <h4 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  <ShieldCheck className="h-4 w-4 text-emerald-500" /> O dia em que a última parcela cair
+                </h4>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  A partir de {resumo.dataLiberdade ? formatarMesAno(resumo.dataLiberdade) : "então"}, os{" "}
+                  <strong className="text-foreground">{formatBRL(resumo.totalMensal)}</strong> que hoje viram dívida passam a virar aporte.
+                  Investidos por 10 anos a {(TAXA_MENSAL_PROJECAO * 100).toFixed(1).replace(".", ",")}% ao mês, seriam{" "}
+                  <strong className="text-foreground">{formatBRL(patrimonioFuturo)}</strong> — um patrimônio capaz de gerar cerca de{" "}
+                  <strong className="text-foreground">{formatBRL(rendaFutura)}</strong> por mês de renda passiva.
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  Enquanto a dívida existe, os {formatBRL(resumo.totalAPagar)} que faltam saem do seu bolso sem construir patrimônio. Antecipar ou
+                  renegociar essas parcelas é o investimento com o melhor retorno garantido que existe hoje.
+                </p>
+                <p className="text-[11px] text-muted-foreground/80">
+                  Simulação com o aporte constante e proventos reinvestidos. É estimativa, não promessa de rentabilidade.
+                </p>
+              </div>
+            )}
+
+            {capacidade > 0 && resumo.totalMensal > capacidade && (
+              <div className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/5 p-4">
+                <AlertTriangle className="h-5 w-5 shrink-0 text-red-400" />
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  As parcelas ({formatBRL(resumo.totalMensal)}) já consomem mais do que sobra do salário hoje ({formatBRL(capacidade)}). Antes de
+                  pensar em aporte, o caminho é reduzir parcela: renegociar, antecipar ou trocar dívida cara por dívida barata.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {!temDividas && (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 text-center">
+            <Hourglass className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-sm font-semibold text-foreground">Nenhuma dívida na contagem</p>
+            <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
+              Se você paga parcela de carro, cartão ou empréstimo, cadastre abaixo: o painel mostra quanto tempo esse dinheiro fica preso e quanto ele
+              renderia depois da quitação.
+            </p>
+          </div>
+        )}
+
+        <div className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-[1fr_9rem_11rem_auto] sm:items-end">
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Dívida</Label>
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Parcela do carro"
+              aria-label="Nome da dívida"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Parcela (R$)</Label>
+            <Input
+              inputMode="decimal"
+              value={parcela}
+              onChange={(e) => setParcela(e.target.value)}
+              placeholder="1300,00"
+              aria-label="Valor da parcela"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Última parcela</Label>
+            <Input type="date" value={ultima} onChange={(e) => setUltima(e.target.value)} aria-label="Data da última parcela" />
+          </div>
+          <Button type="button" onClick={adicionar} className="h-10 gap-2">
+            <Plus className="h-4 w-4" /> Adicionar
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

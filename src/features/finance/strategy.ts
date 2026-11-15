@@ -139,3 +139,120 @@ export function dividirAporte(params: {
   const valorReserva = Math.min(params.reservaFaltante, v);
   return { valorReserva, valorAtivos: Math.max(0, v - valorReserva) };
 }
+
+// ============================================================
+// DÍVIDAS PARCELADAS (DINHEIRO APRISIONADO)
+// ============================================================
+
+/**
+ * Uma dívida parcelada com data de término conhecida.
+ *
+ * As parcelas ficam FORA do custo de vida fixo: o custo representa o que é
+ * permanente, a parcela é temporária e tem prazo para acabar.
+ */
+export type Divida = {
+  id: string;
+  nome: string;
+  /** Valor da parcela mensal. */
+  parcela: number;
+  /** Data da última parcela, no formato `yyyy-mm-dd`. */
+  ultimaParcela: string;
+};
+
+export type DividaDetalhe = Divida & {
+  diasRestantes: number;
+  mesesRestantes: number;
+  /** Soma das parcelas que ainda faltam até a quitação. */
+  restanteAPagar: number;
+  quitada: boolean;
+};
+
+export type ResumoDividas = {
+  detalhes: DividaDetalhe[];
+  /** Soma das parcelas ativas (dinheiro preso por mês). */
+  totalMensal: number;
+  /** Quanto ainda sai do bolso até a última parcela. */
+  totalAPagar: number;
+  mesesAteLiberdade: number;
+  /** Data da parcela que termina por último (ISO) ou `null`. */
+  dataLiberdade: string | null;
+};
+
+/** Meio-dia local, evita virada de dia por fuso no cálculo. */
+function aoMeioDia(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTime();
+}
+
+/** Dias corridos entre hoje e `dataISO` (negativo quando a data já passou). */
+export function diasAteData(dataISO: string, hoje: Date = new Date()): number {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dataISO);
+  if (!partes) return 0;
+  const alvo = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]), 12).getTime();
+  if (Number.isNaN(alvo)) return 0;
+  return Math.round((alvo - aoMeioDia(hoje)) / 86_400_000);
+}
+
+/** Meses cheios restantes até a data; 0 quando já passou do prazo. */
+export function mesesAteData(dataISO: string, hoje: Date = new Date()): number {
+  const dias = diasAteData(dataISO, hoje);
+  return dias <= 0 ? 0 : Math.ceil(dias / 30.4375);
+}
+
+/**
+ * Consolida as dívidas parceladas: quanto está preso por mês, quanto ainda
+ * falta pagar, quando a última parcela cai e o prazo de cada uma.
+ * Ordena da que termina antes para a que termina depois.
+ */
+export function resumoDividas(
+  dividas: ReadonlyArray<Divida>,
+  hoje: Date = new Date(),
+): ResumoDividas {
+  const detalhes: DividaDetalhe[] = dividas
+    .map((d) => {
+      const parcela = Math.max(0, d.parcela || 0);
+      const mesesRestantes = mesesAteData(d.ultimaParcela, hoje);
+      const diasRestantes = Math.max(0, diasAteData(d.ultimaParcela, hoje));
+      return {
+        ...d,
+        parcela,
+        diasRestantes,
+        mesesRestantes,
+        restanteAPagar: parcela * mesesRestantes,
+        quitada: mesesRestantes === 0,
+      };
+    })
+    .sort((a, b) => a.mesesRestantes - b.mesesRestantes);
+
+  const ativas = detalhes.filter((d) => !d.quitada);
+  const totalMensal = ativas.reduce((s, d) => s + d.parcela, 0);
+  const totalAPagar = ativas.reduce((s, d) => s + d.restanteAPagar, 0);
+  const mesesAteLiberdade = ativas.reduce((m, d) => Math.max(m, d.mesesRestantes), 0);
+  const ultima = ativas.reduce<DividaDetalhe | null>(
+    (maior, d) => (!maior || d.mesesRestantes > maior.mesesRestantes ? d : maior),
+    null,
+  );
+
+  return {
+    detalhes,
+    totalMensal,
+    totalAPagar,
+    mesesAteLiberdade,
+    dataLiberdade: ultima ? ultima.ultimaParcela : null,
+  };
+}
+
+/**
+ * Valor acumulado ao investir `aporteMensal` por `meses`, com rendimento de
+ * `taxaMensal` ao mês (aporte ao fim de cada mês).
+ */
+export function valorFuturoAportes(params: {
+  aporteMensal: number;
+  meses: number;
+  taxaMensal: number;
+}): number {
+  const aporte = params.aporteMensal;
+  const meses = Math.max(0, Math.round(params.meses));
+  if (!(aporte > 0) || meses === 0) return 0;
+  if (!(params.taxaMensal > 0)) return aporte * meses;
+  return aporte * ((Math.pow(1 + params.taxaMensal, meses) - 1) / params.taxaMensal);
+}
