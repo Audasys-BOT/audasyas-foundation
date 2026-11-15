@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -113,13 +113,20 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+// Rotas deste app são client-only (ssr: false), então o servidor entrega a área
+// da rota vazia. Renderizar conteúdo antes da hidratação terminar gera o aviso
+// "Hydration failed" quando o guard de login redireciona nesse intervalo.
+const subscribeNever = () => () => {};
+const useHydrated = () => useSyncExternalStore(subscribeNever, () => true, () => false);
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const hydrated = useHydrated();
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {hydrated ? <Outlet /> : null}
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
