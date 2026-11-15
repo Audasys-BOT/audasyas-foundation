@@ -485,10 +485,11 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                       const alcancado = pctProgressoReserva >= nivel.pct;
                       const atual = nivelAtual.nome === nome;
                       const proximo = proximoNivel?.nome === nome;
+                      const valorEtapa = tetoFinal * (nivel.pct / 100);
                       return (
                         <div
                           key={nome}
-                          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors ${
+                          className={`flex items-start gap-2 rounded-lg border px-2.5 py-2 transition-colors ${
                             atual
                               ? tom
                               : alcancado
@@ -498,8 +499,14 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
                                   : "border-border/50 bg-transparent text-muted-foreground/50"
                           }`}
                         >
-                          <Icone className="h-4 w-4 shrink-0" aria-hidden="true" />
-                          <span className="truncate">{nome}</span>
+                          <Icone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold leading-tight">{nome}</p>
+                            <p className="mt-0.5 truncate text-[10px] font-medium tabular-nums opacity-80">
+                              {valorEtapa > 0 ? formatBRL(valorEtapa) : "—"}
+                            </p>
+                          </div>
+                          {alcancado && !atual && <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
                           <span className="sr-only">{atual ? "— etapa atual" : alcancado ? "— etapa concluída" : proximo ? "— próxima etapa" : "— etapa futura"}</span>
                         </div>
                       );
