@@ -658,7 +658,7 @@ function Estrategista({ aporteSugerido, sugestaoReserva, reservaFaltante, metaRe
             <Snowflake className="h-5 w-5 text-primary" /> A Máquina de Fazer Dinheiro
           </CardTitle>
           <CardDescription>
-            Usando R$ {formatBRL(aporteAcao)}/mês e a mágica dos juros compostos.
+            Usando {formatBRL(aporteAcao)}/mês e a mágica dos juros compostos.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6 space-y-8">
@@ -828,7 +828,7 @@ function LemeDaVida({ userId, aporteMensalSugerido, onNext }: { userId: string, 
           <CardContent>
             {aporteConfirmado === null ? (
               <div className="space-y-4">
-                <p className="text-sm text-foreground">A semente de R$ {formatBRL(aporteMensalSugerido)} já foi regada na corretora este mês?</p>
+                <p className="text-sm text-foreground">A semente de {formatBRL(aporteMensalSugerido)} já foi regada na corretora este mês?</p>
                 <div className="flex gap-2">
                   <Button onClick={() => setAporteConfirmado(true)} className="flex-1 bg-emerald-600 hover:bg-emerald-700">Sim, feito!</Button>
                   <Button onClick={() => setAporteConfirmado(false)} variant="destructive" className="flex-1">Não consegui</Button>
@@ -1153,29 +1153,15 @@ function Ativos({ aporteMensal, metaReservaAtingida }: { aporteMensal: number; m
 // NOVIDADE: ABA MINHA CARTEIRA (ACOMPANHAMENTO REAL)
 // ============================================================
 function MinhaCarteira() {
-  const mockPatrimonio = 14250.00;
-  const mockInvestido = 13500.00;
-  const mockRentabilidade = "+5.55%";
-  const mockProventos = 325.40;
+  const mockPatrimonio = 0;
+  const mockInvestido = 0;
+  const mockRentabilidade = "0%";
+  const mockProventos = 0;
 
-  const dividendosHistory = [
-    { mes: 'Jan', val: 12.50 },
-    { mes: 'Fev', val: 18.00 },
-    { mes: 'Mar', val: 24.30 },
-    { mes: 'Abr', val: 42.00 },
-    { mes: 'Mai', val: 65.10 },
-    { mes: 'Jun', val: 78.50 },
-    { mes: 'Jul', val: 85.00 },
-  ];
-  const maxDiv = Math.max(...dividendosHistory.map(d => d.val));
+  const dividendosHistory: { mes: string; val: number }[] = [];
+  const maxDiv = Math.max(1, ...dividendosHistory.map(d => d.val));
 
-  const mockAtivos = [
-    { ticker: 'TAEE11', tipo: 'Ação', qtd: 50, pm: 34.50, atual: 36.20, total: 1810.00, rent: '+4.9%' },
-    { ticker: 'BBAS3', tipo: 'Ação', qtd: 40, pm: 25.00, atual: 28.10, total: 1124.00, rent: '+12.4%' },
-    { ticker: 'HGLG11', tipo: 'FII', qtd: 20, pm: 158.00, atual: 162.00, total: 3240.00, rent: '+2.5%' },
-    { ticker: 'XPML11', tipo: 'FII', qtd: 35, pm: 112.00, atual: 115.50, total: 4042.50, rent: '+3.1%' },
-    { ticker: 'KNCR11', tipo: 'FII', qtd: 40, pm: 101.50, atual: 100.80, total: 4032.00, rent: '-0.6%' },
-  ];
+  const mockAtivos: { ticker: string; tipo: string; qtd: number; pm: number; atual: number; total: number; rent: string }[] = [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -1250,6 +1236,9 @@ function MinhaCarteira() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
+                {mockAtivos.length === 0 && (
+                  <tr><td colSpan={7} className="py-8 text-center text-muted-foreground">Nenhum ativo em custódia ainda. Seus investimentos aparecerão aqui.</td></tr>
+                )}
                 {mockAtivos.map((ativo, i) => (
                   <tr key={i} className="hover:bg-muted/30 transition-colors">
                     <td className="py-3 font-bold text-foreground">{ativo.ticker}</td>
