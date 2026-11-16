@@ -283,3 +283,33 @@ export function sorveteParaSorveteria(aporteMensal: number, anos: number, taxaMe
 export function transbordoReserva(reserva: number, teto: number): number {
   return teto > 0 ? Math.max(0, reserva - teto) : 0;
 }
+
+/** Pilares do legado: Brasil, Global/Dólar e Pimenta. Padrão 75/20/5. */
+export type Pilares = { brasil: number; global: number; pimenta: number };
+export const PILARES_PADRAO: Pilares = { brasil: 75, global: 20, pimenta: 5 };
+
+/** Normaliza os percentuais para somar 100 e limita a Pimenta a 10%. */
+export function normalizarPilares(p: Pilares): Pilares {
+  const pimenta = Math.min(Math.max(p.pimenta, 0), 10);
+  const brasil = Math.max(p.brasil, 0);
+  const global = Math.max(p.global, 0);
+  const resto = brasil + global;
+  if (resto <= 0) return { brasil: 100 - pimenta, global: 0, pimenta };
+  const b = Math.round(((100 - pimenta) * brasil) / resto);
+  return { brasil: b, global: 100 - pimenta - b, pimenta };
+}
+
+/** Divide o aporte em ativos pelos pilares (em R$). */
+export function dividirPilares(aporte: number, p: Pilares) {
+  const n = normalizarPilares(p);
+  const brasil = Math.round(aporte * n.brasil) / 100;
+  const global = Math.round(aporte * n.global) / 100;
+  return { brasil, global, pimenta: Math.round((aporte - brasil - global) * 100) / 100 };
+}
+
+/** Meses para completar a reserva no ritmo informado. */
+export function mesesSprintReserva(faltante: number, aporteMensal: number): number {
+  if (faltante <= 0) return 0;
+  if (aporteMensal <= 0) return Infinity;
+  return Math.ceil(faltante / aporteMensal);
+}
