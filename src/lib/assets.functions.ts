@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { AUDASYAS_SYSTEM_PROMPT } from "./guidance.functions";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const AnalysisSchema = z.object({
   parecer: z.string(),
@@ -24,8 +25,12 @@ const InputSchema = z.object({
 });
 
 export const analyzeAsset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { data: prof } = await context.supabase.from("profiles").select("strategic_objective, tax_preference").eq("id", context.userId).maybeSingle();
+    const objetivo = prof?.strategic_objective ?? "brasil_dividendos";
+    const tributo = prof?.tax_preference ?? "isencao_prioritaria";
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("Missing LOVABLE_API_KEY");
 
@@ -47,6 +52,11 @@ Dados:
 - Percentual definido na carteira: ${data.percentual_carteira}%
 - Aporte mensal total: R$ ${data.aporte_mensal.toFixed(2)}
 - Valor mensal destinado a este ativo: R$ ${valorAlocado.toFixed(2)}
+
+Perfil do investidor:
+- Objetivo estratégico: ${objetivo} (brasil_dividendos = renda passiva local; dolarizacao_saida = dolarizar 50-70% para transição internacional; aposentadoria_rapida = máxima taxa de poupança).
+- Preferência tributária: ${tributo}. Se "isencao_prioritaria", priorize FIIs e dividendos isentos; só destaque ativo tributado se o retorno LÍQUIDO após IR superar claramente a opção isenta, mostrando a comparação em R$. Se "retorno_liquido", compare tudo pelo retorno líquido após IR.
+- NUNCA sugira day trade ou especulação de curto prazo. Use apenas lógica de longo prazo (P/VP, preço teto Bazin = dividendo médio / 0,06, prêmio sobre a Selic) para dizer oportunidade ou bolha.
 
 Responda em português do Brasil:
 - parecer: exatamente um de "Compra forte", "Aguardar", "Rebalancear".
