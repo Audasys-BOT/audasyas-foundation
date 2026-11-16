@@ -1,4 +1,5 @@
 import { DiagnosticoVida } from "@/features/onboarding/DiagnosticoVida";
+import { PerfilEstrategico } from "@/features/profile/PerfilEstrategico";
 import { SprintLegado } from "@/features/onboarding/SprintLegado";
 import { tetoReserva } from "@/features/finance/strategy";
 import { createFileRoute } from "@tanstack/react-router";
@@ -399,6 +400,7 @@ function SimDashboard({ userId, onSignOut }: { userId: string, onSignOut: () => 
 
           {/* ABA 1: CONTROLE FINANCEIRO */}
           <TabsContent value="financeiro" className="space-y-8 mt-0 animate-in fade-in zoom-in-95 duration-500">
+            <PerfilEstrategico />
             <DiagnosticoVida salario={salarioNum} custo={custoFinal} reserva={reservaAcumulada} teto={tetoFinal} />
             <SprintLegado userId={userId} capacidade={liveCapacity} reserva={reservaAcumulada} teto={tetoFinal} />
             <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-card/60 p-6 sm:p-8">
