@@ -76,30 +76,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cpf: string | null
           created_at: string
           full_name: string | null
           id: string
           long_term_goal: string | null
+          strategic_objective: string
           target_amount: number | null
           target_date: string | null
+          tax_preference: string
           updated_at: string
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
           full_name?: string | null
           id: string
           long_term_goal?: string | null
+          strategic_objective?: string
           target_amount?: number | null
           target_date?: string | null
+          tax_preference?: string
           updated_at?: string
         }
         Update: {
+          cpf?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           long_term_goal?: string | null
+          strategic_objective?: string
           target_amount?: number | null
           target_date?: string | null
+          tax_preference?: string
           updated_at?: string
         }
         Relationships: []
