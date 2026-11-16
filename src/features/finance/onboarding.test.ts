@@ -22,3 +22,17 @@ describe("Reserva e custo de vida", () => {
     expect(sorveteParaSorveteria(450, 20, 0)).toBe(108000);
   });
 });
+
+import { normalizarPilares, dividirPilares, mesesSprintReserva } from "./strategy";
+describe("pilares e sprint", () => {
+  it("padrão 75/20/5 divide R$1000", () => {
+    expect(dividirPilares(1000, { brasil: 75, global: 20, pimenta: 5 })).toEqual({ brasil: 750, global: 200, pimenta: 50 });
+  });
+  it("pimenta limitada a 10%", () => {
+    expect(normalizarPilares({ brasil: 50, global: 20, pimenta: 30 }).pimenta).toBe(10);
+  });
+  it("sprint: faltam 12600 a 900/mês = 14 meses; +300 = 11", () => {
+    expect(mesesSprintReserva(12600, 900)).toBe(14);
+    expect(mesesSprintReserva(12600, 1200)).toBe(11);
+  });
+});
